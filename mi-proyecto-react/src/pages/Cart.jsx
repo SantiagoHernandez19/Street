@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaTrash, FaMinus, FaPlus, FaShoppingCart, FaTimes, FaArrowLeft } from 'react-icons/fa';
+import { FaTrash, FaMinus, FaPlus, FaShoppingCart, FaTimes, FaArrowLeft, FaWhatsapp } from 'react-icons/fa';
 import Footer from '../components/Footer';
 import jsPDF from 'jspdf';
 
 // ✨ FACTURA MODAL MEJORADA — ESTRECHA, CON LOGO, IVA Y SCROLL
 const InvoiceModal = ({ isOpen, onClose, invoiceData }) => {
   if (!isOpen) return null;
-
+  
   const {
     invoiceNumber,
     date,
     customerEmail,
     items,
     subtotal,
-    tax,
+    shipping = '',
     total,
     businessName = "GM CAPS",
     businessAddress = "Tienda de Gorras Premium",
@@ -23,27 +23,23 @@ const InvoiceModal = ({ isOpen, onClose, invoiceData }) => {
 
   const handleDownloadPDF = () => {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-
-    // Título
+    
     doc.setFontSize(18);
     doc.text("FACTURA", 105, 25, { align: 'center' });
     doc.setFontSize(12);
     doc.text(`No. INV-${invoiceNumber}`, 105, 35, { align: 'center' });
     doc.text(`Fecha: ${date}`, 105, 42, { align: 'center' });
 
-    // Empresa
     doc.setFontSize(14);
     doc.text(businessName, 20, 60);
     doc.setFontSize(10);
     doc.text(businessAddress, 20, 67);
     doc.text(businessEmail, 20, 74);
 
-    // Cliente
     doc.setFontSize(12);
     doc.text("Facturado a:", 20, 90);
     doc.text(customerEmail, 20, 97);
 
-    // Productos
     let yPos = 110;
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
@@ -62,21 +58,19 @@ const InvoiceModal = ({ isOpen, onClose, invoiceData }) => {
       yPos += 7;
     });
 
-    // Totales
     yPos += 10;
     doc.setFont('helvetica', 'bold');
     doc.text("Subtotal:", 120, yPos);
     doc.text(`$${subtotal.toLocaleString()}`, 150, yPos);
     yPos += 7;
-    doc.text("IVA (19%):", 120, yPos);
-    doc.text(`$${tax.toLocaleString()}`, 150, yPos);
+    doc.text("Envío:", 120, yPos);
+    doc.text(shipping || 'N/A', 150, yPos);
     yPos += 12;
     doc.setFontSize(14);
     doc.text("TOTAL:", 120, yPos);
     doc.setFontSize(16);
     doc.text(`$${total.toLocaleString()}`, 150, yPos);
 
-    // Pie
     doc.setFontSize(9);
     doc.setFont('helvetica', 'italic');
     doc.text("Gracias por tu compra. Recibirás un correo de confirmación.", 20, yPos + 20);
@@ -106,31 +100,32 @@ const InvoiceModal = ({ isOpen, onClose, invoiceData }) => {
         borderRadius: '12px',
         width: '100%',
         maxWidth: '450px',
-        maxHeight: '85vh',
+        maxHeight: '90vh',
         overflowY: 'auto',
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
         border: '1px solid #FFC107',
         padding: '20px',
         position: 'relative'
       }}>
-        {/* LOGO ARRIBA */}
         <div style={{ textAlign: 'center', marginBottom: '15px' }}>
-          <img 
-            src="/logo.png" 
-            alt="Logo GM CAPS" 
-            style={{ 
-              width: '50px', 
-              height: '50px', 
+          <img
+            src="/logo.png"
+            alt="Logo GM CAPS"
+            style={{
+              width: '50px',
+              height: '50px',
               borderRadius: '6px',
               border: '1px solid #FFC107',
               objectFit: 'contain'
-            }} 
+            }}
             onError={(e) => {
-              e.target.src = 'https://via.placeholder.com/50x50/1E293B/FFC107?text=GM    ';
+              e.target.src = 'https://via.placeholder.com/50x50/1E293B/FFC107?text=GM';
             }}
           />
-          <h3 style={{ 
-            color: '#FFC107', 
-            margin: '10px 0 0 0', 
+          <h3 style={{
+            color: '#FFC107',
+            margin: '10px 0 0 0',
             fontSize: '14px',
             fontWeight: 'bold'
           }}>
@@ -162,10 +157,9 @@ const InvoiceModal = ({ isOpen, onClose, invoiceData }) => {
           <FaTimes />
         </button>
 
-        {/* Cabecera */}
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
           marginBottom: '15px',
           paddingBottom: '10px',
           borderBottom: '1px solid rgba(255, 193, 7, 0.2)',
@@ -183,8 +177,7 @@ const InvoiceModal = ({ isOpen, onClose, invoiceData }) => {
           </div>
         </div>
 
-        {/* Cliente */}
-        <div style={{ 
+        <div style={{
           marginBottom: '15px',
           padding: '8px 0',
           borderBottom: '1px solid rgba(255, 193, 7, 0.2)',
@@ -193,13 +186,12 @@ const InvoiceModal = ({ isOpen, onClose, invoiceData }) => {
           <strong>Facturado a:</strong> {customerEmail}
         </div>
 
-        {/* Productos */}
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
           <thead>
             <tr>
               <th style={{ textAlign: 'left', padding: '6px 0', fontWeight: 'bold' }}>Producto</th>
               <th style={{ textAlign: 'center', padding: '6px 0', fontWeight: 'bold' }}>Cant.</th>
-              <th style={{ textAlign: 'right', padding: '6px 0', fontWeight: 'bold' }}>Total</th>
+              <th style={{ textAlign: 'right', padding: '6px 0', fontWeight: 'bold' }}>Precio</th>
             </tr>
           </thead>
           <tbody>
@@ -207,21 +199,23 @@ const InvoiceModal = ({ isOpen, onClose, invoiceData }) => {
               <tr key={i} style={{ borderBottom: '1px solid rgba(255, 193, 7, 0.1)' }}>
                 <td style={{ padding: '7px 0' }}>{item.name}</td>
                 <td style={{ textAlign: 'center', padding: '7px 0' }}>{item.quantity}</td>
-                <td style={{ textAlign: 'right', padding: '7px 0' }}>${(item.price * item.quantity).toLocaleString()}</td>
+                <td style={{ textAlign: 'right', padding: '7px 0' }}>
+                  ${(item.price * item.quantity).toLocaleString()}
+                  {item.quantity > 1 && (
+                    <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', marginTop: '2px' }}>
+                      c/u ${item.price.toLocaleString()}
+                    </div>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
 
-        {/* Totales */}
         <div style={{ marginTop: '16px', textAlign: 'right', fontSize: '13px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', margin: '5px 0' }}>
-            <span>Subtotal:</span>
-            <strong>${subtotal.toLocaleString()}</strong>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', margin: '5px 0' }}>
-            <span>IVA (19%):</span>
-            <strong>${tax.toLocaleString()}</strong>
+            <span>Envío:</span>
+            <strong style={{ fontStyle: 'italic' }}>{shipping || 'N/A'}</strong>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', fontSize: '15px', color: '#FFC107', fontWeight: 'bold' }}>
             <span>Total:</span>
@@ -229,28 +223,7 @@ const InvoiceModal = ({ isOpen, onClose, invoiceData }) => {
           </div>
         </div>
 
-        <div style={{ marginTop: '18px', textAlign: 'center', fontSize: '11px', color: '#aaa', fontStyle: 'italic' }}>
-          Gracias por tu compra. Recibirás un correo de confirmación en breve.
-        </div>
-
-        {/* Botones */}
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '22px' }}>
-          <button
-            onClick={handlePrint}
-            style={{
-              flex: 1,
-              padding: '9px',
-              backgroundColor: '#fff',
-              color: '#000',
-              border: 'none',
-              borderRadius: '6px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              fontSize: '12px'
-            }}
-          >
-            Imprimir
-          </button>
           <button
             onClick={handleDownloadPDF}
             style={{
@@ -265,7 +238,7 @@ const InvoiceModal = ({ isOpen, onClose, invoiceData }) => {
               fontSize: '12px'
             }}
           >
-            📥 PDF
+            📥 Descargar PDF
           </button>
           <button
             onClick={onClose}
@@ -284,21 +257,31 @@ const InvoiceModal = ({ isOpen, onClose, invoiceData }) => {
             Cerrar
           </button>
         </div>
+
+        {/* Mensaje WhatsApp */}
+        <div style={{ margin: '16px 0 0 0', padding: '12px', backgroundColor: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '8px', textAlign: 'center' }}>
+          <p style={{ color: '#10B981', fontSize: '12px', fontWeight: '600', margin: '0 0 8px 0', lineHeight: '1.5' }}>
+            📩 Comuníquese con nosotros por WhatsApp y envíe el recibo de su pedido para confirmar el valor del envío.
+          </p>
+          <a href="https://wa.me/gorrasmedellincaps" target="_blank" rel="noopener noreferrer" style={{ color: '#10B981', fontWeight: 'bold', fontSize: '13px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <FaWhatsapp style={{ fontSize: '16px' }} /> Ir a WhatsApp
+          </a>
+        </div>
       </div>
     </div>
   );
 };
 
 // ✨ MODAL DE CONFIRMACIÓN DE COMPRA
-const ConfirmPurchaseModal = ({ 
-  isOpen, 
-  onConfirm, 
-  onCancel, 
-  total, 
-  subtotal, 
-  tax, 
+const ConfirmPurchaseModal = ({
+  isOpen,
+  onConfirm,
+  onCancel,
+  total,
+  subtotal,
+  tax,
   itemCount,
-  isProcessing = false 
+  isProcessing = false
 }) => {
   if (!isOpen) return null;
 
@@ -350,7 +333,6 @@ const ConfirmPurchaseModal = ({
           <FaTimes />
         </button>
 
-        {/* Icono y título */}
         <div style={{ textAlign: 'center', marginBottom: '20px' }}>
           <div style={{
             fontSize: '40px',
@@ -392,7 +374,6 @@ const ConfirmPurchaseModal = ({
           </p>
         </div>
 
-        {/* Resumen rápido */}
         <div style={{
           backgroundColor: 'rgba(255, 193, 7, 0.05)',
           borderRadius: '8px',
@@ -418,7 +399,6 @@ const ConfirmPurchaseModal = ({
           </div>
         </div>
 
-        {/* Botones */}
         <div style={{ display: 'flex', gap: '10px' }}>
           <button
             onClick={onCancel}
@@ -474,22 +454,22 @@ const ConfirmPurchaseModal = ({
 };
 
 // ✨ COMPONENTES DE ALERTA
-const CustomConfirm = ({ 
-  isOpen, 
-  onConfirm, 
-  onCancel, 
-  title, 
-  message, 
+const CustomConfirm = ({
+  isOpen,
+  onConfirm,
+  onCancel,
+  title,
+  message,
   productName,
-  confirmText = "Confirmar", 
+  confirmText = "Confirmar",
   cancelText = "Cancelar",
-  type = "warning" 
+  type = "warning"
 }) => {
   if (!isOpen) return null;
 
   return (
     <>
-      <div 
+      <div
         style={{
           position: 'fixed',
           top: 0,
@@ -502,7 +482,6 @@ const CustomConfirm = ({
         }}
         onClick={onCancel}
       />
-      
       <div style={{
         position: 'fixed',
         top: '50%',
@@ -581,7 +560,7 @@ const CustomConfirm = ({
               backgroundColor: 'rgba(255, 193, 7, 0.08)',
               borderRadius: '4px'
             }}>
-              "{productName}"
+              {productName}
             </span>
           </div>
         )}
@@ -689,7 +668,6 @@ const CenterAlert = ({ message, isVisible, onClose }) => {
         zIndex: 10000,
         animation: 'fadeIn 0.3s ease'
       }} />
-      
       <div style={{
         position: 'fixed',
         top: '50%',
@@ -760,6 +738,242 @@ const CenterAlert = ({ message, isVisible, onClose }) => {
   );
 };
 
+// ✨ DATOS DE MÉTODOS DE PAGO
+const PAYMENT_METHODS = [
+  { id: 'nequi', name: 'Nequi', img: 'https://res.cloudinary.com/dxc5qqsjd/image/upload/v1773077199/WhatsApp_Image_2026-03-05_at_2.23.11_PM_4_ez06y3.jpg', group: 'upfront', qr: 'https://res.cloudinary.com/dxc5qqsjd/image/upload/v1773337920/WhatsApp_Image_2026-03-12_at_12.49.25_PM_vryssw.jpg' },
+  { id: 'bancolombia', name: 'Bancolombia', img: 'https://res.cloudinary.com/dxc5qqsjd/image/upload/v1773079418/WhatsApp_Image_2026-03-09_at_1.01.39_PM_lgtfn2.jpg', group: 'upfront', qr: 'https://res.cloudinary.com/dxc5qqsjd/image/upload/v1773337951/bancolombia_u4ipqc.jpg' },
+  { id: 'bold', name: 'Bold', img: 'https://res.cloudinary.com/dxc5qqsjd/image/upload/v1773077199/WhatsApp_Image_2026-03-05_at_2.23.11_PM_2_bjynti.jpg', group: 'upfront', link: 'https://checkout.bold.co/payment/LNK_UT9BG4IVNG' },
+  { id: 'contraentrega', name: 'Contra entrega', img: null, group: 'delivery' },
+  { id: 'recoger', name: 'Recoger en el local', img: null, group: 'pickup' },
+];
+
+// ✨ CHECKOUT MODAL (FLUJO EN 2 PASOS)
+const CheckoutModal = ({ isOpen, onClose, onConfirm, total, subtotal, selectedMethod, setSelectedMethod, address, setAddress, receiptFile, setReceiptFile, isProcessing, cartItems = [], getProductName: gPN, getProductPrice: gPP }) => {
+  const [step, setStep] = React.useState(1);
+  const [addressError, setAddressError] = React.useState(false);
+  
+  // Reset step when modal opens/closes
+  React.useEffect(() => {
+    if (isOpen) setStep(1);
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  const upfrontMethods = PAYMENT_METHODS.filter(m => m.group === 'upfront');
+  const otherMethods = PAYMENT_METHODS.filter(m => m.group !== 'upfront');
+  const currentMethod = PAYMENT_METHODS.find(m => m.id === selectedMethod);
+  const isUpfront = currentMethod?.group === 'upfront';
+  const isDelivery = selectedMethod === 'contraentrega';
+  const isPickup = selectedMethod === 'recoger';
+  const isNequi = selectedMethod === 'nequi';
+  const isBancolombia = selectedMethod === 'bancolombia';
+  const isBold = selectedMethod === 'bold';
+
+  const shippingText = isUpfront ? 'no incluido' : isDelivery ? 'contraentrega' : isPickup ? 'recoger en el local' : '';
+
+  const handleContinue = () => {
+    if (!selectedMethod) return;
+    if (!isPickup && !address.trim()) {
+      setAddressError(true);
+      return;
+    }
+    setAddressError(false);
+    // Si es Bold, abrir enlace en nueva pestaña
+    if (isBold) {
+      window.open(currentMethod.link, '_blank');
+    }
+    setStep(2);
+  };
+
+  const handleBack = () => {
+    setStep(1);
+  };
+
+  const handleClose = () => {
+    setStep(1);
+    onClose();
+  };
+
+  return (
+    <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.88)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 10000, padding: '15px' }}>
+      <div style={{ background: '#0f172a', color: 'white', borderRadius: '14px', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', border: '1px solid #FFC107', padding: '22px', position: 'relative' }}>
+        <button onClick={handleClose} style={{ position: 'absolute', top: '12px', right: '12px', background: 'transparent', border: 'none', color: '#FFC107', fontSize: '18px', cursor: 'pointer', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <FaTimes />
+        </button>
+
+        {/* ========== PASO 1: SELECCIONAR MÉTODO ========== */}
+        {step === 1 && (
+          <>
+            <h3 style={{ color: '#FFC107', textAlign: 'center', fontSize: '17px', margin: '0 0 18px 0' }}>Selecciona tu método de pago</h3>
+
+            {/* Métodos principales centrados */}
+            <div style={{ marginBottom: '16px' }}>
+              <p style={{ color: '#e2e8f0', fontSize: '13px', fontWeight: 'bold', marginBottom: '10px', textAlign: 'center' }}>Métodos de pago</p>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '8px' }}>
+                {upfrontMethods.map(m => (
+                  <button key={m.id} onClick={() => { setSelectedMethod(m.id); setAddressError(false); }} style={{ background: selectedMethod === m.id ? 'rgba(255,193,7,0.15)' : '#1e293b', border: selectedMethod === m.id ? '2px solid #FFC107' : '1px solid #334155', borderRadius: '10px', padding: '8px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s' }}>
+                    <img src={m.img} alt={m.name} style={{ height: '28px', borderRadius: '6px', objectFit: 'contain' }} />
+                    <span style={{ color: selectedMethod === m.id ? '#FFC107' : '#94a3b8', fontSize: '12px', fontWeight: '600' }}>{m.name}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Mensaje de envío visible en verde */}
+              {selectedMethod && isUpfront && (
+                <div style={{ margin: '10px 0', padding: '10px 14px', backgroundColor: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '8px', textAlign: 'center' }}>
+                  <p style={{ color: '#10B981', fontSize: '12px', fontWeight: '600', margin: 0, lineHeight: '1.5' }}>
+                    📦 Le informamos que usted asumirá el costo del envío correspondiente a su pedido.
+                  </p>
+                </div>
+              )}
+
+              <p style={{ color: '#e2e8f0', fontSize: '13px', fontWeight: 'bold', marginTop: '14px', marginBottom: '8px', textAlign: 'center' }}>Otros métodos</p>
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                {otherMethods.map(m => (
+                  <button key={m.id} onClick={() => { setSelectedMethod(m.id); setAddressError(false); }} style={{ flex: 1, maxWidth: '180px', background: selectedMethod === m.id ? 'rgba(255,193,7,0.15)' : '#1e293b', border: selectedMethod === m.id ? '2px solid #FFC107' : '1px solid #334155', borderRadius: '10px', padding: '10px 8px', cursor: 'pointer', transition: 'all 0.2s' }}>
+                    <span style={{ color: selectedMethod === m.id ? '#FFC107' : '#94a3b8', fontSize: '11px', fontWeight: '600', display: 'block', textAlign: 'center' }}>{m.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Dirección */}
+            {selectedMethod && (
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ color: '#e2e8f0', fontSize: '12px', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>
+                  Dirección de envío {isPickup ? <span style={{ color: '#94a3b8', fontWeight: 'normal' }}>(no requerida)</span> : <span style={{ color: '#ff4d4d', fontWeight: 'normal' }}>*</span>}:
+                </label>
+                <input type="text" value={address} onChange={(e) => { setAddress(e.target.value); setAddressError(false); }} placeholder={isPickup ? 'No requerida para recoger en el local' : 'Ingresa tu dirección completa'} disabled={isPickup} style={{ width: '100%', padding: '10px 12px', backgroundColor: isPickup ? '#1a2332' : '#1e293b', border: addressError ? '1px solid #ff4d4d' : '1px solid #334155', borderRadius: '8px', color: isPickup ? '#666' : '#fff', fontSize: '13px', outline: 'none', boxSizing: 'border-box', opacity: isPickup ? 0.6 : 1 }} />
+                {addressError && <p style={{ color: '#ff4d4d', fontSize: '11px', margin: '4px 0 0 0' }}>Debes ingresar una dirección de envío</p>}
+              </div>
+            )}
+
+            {/* Resumen */}
+            <div style={{ backgroundColor: 'rgba(255,193,7,0.05)', borderRadius: '8px', padding: '12px', marginBottom: '16px', fontSize: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                <span style={{ color: '#ccc' }}>Subtotal:</span>
+                <span style={{ color: '#fff' }}>${subtotal.toLocaleString()}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                <span style={{ color: '#ccc' }}>Envío:</span>
+                <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>{shippingText || 'selecciona método'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '6px', borderTop: '1px solid rgba(255,193,7,0.2)', fontSize: '14px' }}>
+                <strong style={{ color: '#FFC107' }}>Total:</strong>
+                <strong style={{ color: '#FFC107' }}>${total.toLocaleString()}</strong>
+              </div>
+            </div>
+
+            {/* Botones Paso 1 */}
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button onClick={handleClose} style={{ flex: 1, padding: '11px', backgroundColor: 'transparent', border: '1px solid #666', borderRadius: '8px', color: '#CBD5E1', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>Cancelar</button>
+              <button onClick={handleContinue} disabled={!selectedMethod} style={{ flex: 1, padding: '11px', backgroundColor: !selectedMethod ? '#555' : '#FFC107', border: 'none', borderRadius: '8px', color: '#000', fontWeight: 'bold', cursor: !selectedMethod ? 'not-allowed' : 'pointer', fontSize: '13px' }}>
+                Continuar
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* ========== PASO 2: QR / COMPROBANTE ========== */}
+        {step === 2 && (
+          <>
+            <h3 style={{ color: '#FFC107', textAlign: 'center', fontSize: '17px', margin: '0 0 18px 0' }}>
+              {isBold ? 'Completa tu pago con Bold' : (isNequi || isBancolombia) ? `Paga con ${currentMethod?.name}` : 'Confirma tu pedido'}
+            </h3>
+
+            {/* QR Nequi */}
+            {isNequi && (
+              <div style={{ textAlign: 'center', margin: '0 0 16px 0', padding: '16px', backgroundColor: '#fff', borderRadius: '12px' }}>
+                <p style={{ color: '#000', fontSize: '13px', fontWeight: 'bold', margin: '0 0 10px 0' }}>Escanea el QR para pagar con Nequi</p>
+                <img src={currentMethod.qr} alt="QR Nequi" style={{ width: '220px', height: '220px', objectFit: 'contain', borderRadius: '8px', display: 'block', margin: '0 auto' }} />
+              </div>
+            )}
+
+            {/* QR Bancolombia */}
+            {isBancolombia && (
+              <div style={{ textAlign: 'center', margin: '0 0 16px 0', padding: '16px', backgroundColor: '#fff', borderRadius: '12px' }}>
+                <p style={{ color: '#000', fontSize: '13px', fontWeight: 'bold', margin: '0 0 10px 0' }}>Escanea el QR para pagar con Bancolombia</p>
+                <img src={currentMethod.qr} alt="QR Bancolombia" style={{ width: '220px', height: '220px', objectFit: 'contain', borderRadius: '8px', display: 'block', margin: '0 auto' }} />
+              </div>
+            )}
+
+            {/* Bold redirigido */}
+            {isBold && (
+              <div style={{ textAlign: 'center', margin: '0 0 16px 0', padding: '16px', backgroundColor: 'rgba(255,193,7,0.05)', borderRadius: '12px', border: '1px solid rgba(255,193,7,0.2)' }}>
+                <p style={{ color: '#e2e8f0', fontSize: '13px', marginBottom: '8px' }}>Se ha abierto la pasarela de Bold en una nueva pestaña.</p>
+                <p style={{ color: '#94a3b8', fontSize: '11px' }}>Completa tu pago allí y luego sube el comprobante aquí.</p>
+                <a href={currentMethod.link} target="_blank" rel="noopener noreferrer" style={{ color: '#FFC107', fontWeight: 'bold', fontSize: '12px' }}>Abrir Bold nuevamente →</a>
+              </div>
+            )}
+
+            {/* Mensaje para contraentrega / recoger */}
+            {(isDelivery || isPickup) && (
+              <div style={{ textAlign: 'center', margin: '0 0 16px 0', padding: '16px', backgroundColor: 'rgba(16, 185, 129, 0.08)', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                <p style={{ color: '#10B981', fontSize: '13px', fontWeight: '600', margin: 0 }}>
+                  {isDelivery ? '🚚 Pagarás al recibir tu pedido en la dirección indicada.' : '🏪 Podrás recoger tu pedido en nuestro local.'}
+                </p>
+              </div>
+            )}
+
+            {/* Comprobante de pago (OPCIONAL, solo para métodos de pago adelantado) */}
+            {isUpfront && (
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ color: '#e2e8f0', fontSize: '12px', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>Comprobante de pago <span style={{ color: '#94a3b8', fontWeight: 'normal' }}>(opcional)</span>:</label>
+                <input type="file" accept="image/*" onChange={(e) => setReceiptFile(e.target.files[0] || null)} style={{ width: '100%', padding: '8px', backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#94a3b8', fontSize: '12px' }} />
+              </div>
+            )}
+
+            {/* Lista de productos del pedido */}
+            <div style={{ backgroundColor: 'rgba(255,193,7,0.05)', borderRadius: '8px', padding: '12px', marginBottom: '12px', fontSize: '11px' }}>
+              <p style={{ color: '#FFC107', fontSize: '12px', fontWeight: 'bold', margin: '0 0 8px 0' }}>Tu pedido:</p>
+              {cartItems.map((item, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', paddingBottom: '4px', borderBottom: '1px solid rgba(255,193,7,0.1)' }}>
+                  <span style={{ color: '#CBD5E1', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>• {gPN ? gPN(item) : (item.nombre || item.name || 'Producto')} x{item.quantity || 1}</span>
+                  <span style={{ color: '#FFC107', fontWeight: 'bold', whiteSpace: 'nowrap' }}>${((gPP ? gPP(item) : (item.precio || item.price || 0)) * (item.quantity || 1)).toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Resumen final */}
+            <div style={{ backgroundColor: 'rgba(255,193,7,0.05)', borderRadius: '8px', padding: '12px', marginBottom: '16px', fontSize: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                <span style={{ color: '#ccc' }}>Método:</span>
+                <span style={{ color: '#FFC107', fontWeight: 'bold' }}>{currentMethod?.name}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                <span style={{ color: '#ccc' }}>Envío:</span>
+                <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>{shippingText}</span>
+              </div>
+              {address && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                  <span style={{ color: '#ccc' }}>Dirección:</span>
+                  <span style={{ color: '#fff', fontSize: '11px', maxWidth: '200px', textAlign: 'right' }}>{address}</span>
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '6px', borderTop: '1px solid rgba(255,193,7,0.2)', fontSize: '14px' }}>
+                <strong style={{ color: '#FFC107' }}>Total:</strong>
+                <strong style={{ color: '#FFC107' }}>${total.toLocaleString()}</strong>
+              </div>
+            </div>
+
+            {/* Botones Paso 2 */}
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button onClick={handleBack} style={{ flex: 1, padding: '11px', backgroundColor: 'transparent', border: '1px solid #666', borderRadius: '8px', color: '#CBD5E1', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>← Volver</button>
+              <button onClick={onConfirm} disabled={isProcessing} style={{ flex: 1, padding: '11px', backgroundColor: '#FFC107', border: 'none', borderRadius: '8px', color: '#000', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', opacity: isProcessing ? 0.7 : 1 }}>
+                {isProcessing ? 'Procesando...' : 'Confirmar Compra'}
+              </button>
+            </div>
+
+          </>
+        )}
+      </div>
+      <style>{`
+        div::-webkit-scrollbar { display: none; }
+      `}</style>
+    </div>
+  );
+};
+
 // ✨ COMPONENTE PRINCIPAL
 const Cart = ({ cartItems = [], updateCart, user }) => {
   const [centerAlert, setCenterAlert] = useState({ visible: false, message: '' });
@@ -769,13 +983,26 @@ const Cart = ({ cartItems = [], updateCart, user }) => {
   const [itemToDelete, setItemToDelete] = useState(null);
   const [productToDeleteName, setProductToDeleteName] = useState('');
   const [showInvoice, setShowInvoice] = useState(false);
-  const [showConfirmPurchase, setShowConfirmPurchase] = useState(false);
+  const [showCheckout, setShowCheckout] = useState(false);
   const [invoiceData, setInvoiceData] = useState(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [receiptFile, setReceiptFile] = useState(null);
+  const [selectedDetailProduct, setSelectedDetailProduct] = useState(null);
+  
   const navigate = useNavigate();
-
   const safeCartItems = Array.isArray(cartItems) ? cartItems : [];
 
-  // Funciones auxiliares
+  // Texto dinámico de envío
+  const getShippingText = () => {
+    if (!selectedPaymentMethod) return '';
+    const method = PAYMENT_METHODS.find(m => m.id === selectedPaymentMethod);
+    if (method?.group === 'upfront') return 'no incluido';
+    if (method?.group === 'delivery') return 'contraentrega';
+    if (method?.group === 'pickup') return 'recoger en el local';
+    return '';
+  };
+
   const handleRemoveFromCart = (productId, productName) => {
     setItemToDelete(productId);
     setProductToDeleteName(productName);
@@ -811,47 +1038,49 @@ const Cart = ({ cartItems = [], updateCart, user }) => {
   };
 
   const calculateTotals = () => {
-    if (safeCartItems.length === 0) return { subtotal: 0, total: 0, tax: 0 };
+    if (safeCartItems.length === 0) return { subtotal: 0, total: 0 };
+    
     const subtotal = safeCartItems.reduce((sum, item) => {
       const precio = Number(item.precio ?? item.price ?? item.originalPrice ?? 0);
       return sum + (precio * (item.quantity || 1));
     }, 0);
-    const tax = Math.round(subtotal * 0.19);
-    return { subtotal, tax, total: subtotal + tax };
+    
+    return { subtotal, total: subtotal };
   };
 
-  const { subtotal, tax, total } = calculateTotals();
+  const { subtotal, total } = calculateTotals();
 
   const getImageUrl = (item) => {
     if (item.imagen && item.imagen.trim() !== '') return item.imagen;
     if (item.imagenes?.[0]) return item.imagenes[0];
     if (item.image && item.image.trim() !== '') return item.image;
-    return 'https://via.placeholder.com/80x80/1E293B/FFC107?text=GM    ';
+    return 'https://via.placeholder.com/80x80/1E293B/FFC107?text=GM';
   };
 
   const getProductName = (item) => item.nombre?.trim() || item.name?.trim() || 'Producto sin nombre';
   const getProductPrice = (item) => Number(item.precio ?? item.price ?? item.originalPrice ?? 0);
   const getProductCategory = (item) => item.categoria?.trim() || item.category?.trim() || 'Sin categoría';
+
   const handleImageError = (e) => {
-    e.target.src = 'https://via.placeholder.com/80x80/1E293B/FFC107?text=GM    ';
+    e.target.src = 'https://via.placeholder.com/80x80/1E293B/FFC107?text=GM';
     e.target.alt = 'Imagen no disponible';
   };
 
-  // Mostrar confirmación de compra
   const handleFinishPurchase = () => {
     if (!user) {
       navigate('/login');
       return;
     }
-    
-    setShowConfirmPurchase(true);
+    setSelectedPaymentMethod('');
+    setDeliveryAddress('');
+    setReceiptFile(null);
+    setShowCheckout(true);
   };
 
-  // Confirmar la compra (usuario presiona Aceptar)
-  const confirmPurchase = () => {
+  const confirmPurchaseFromCheckout = () => {
     setIsProcessing(true);
-    setShowConfirmPurchase(false);
-
+    setShowCheckout(false);
+    
     setTimeout(() => {
       setIsProcessing(false);
 
@@ -865,7 +1094,7 @@ const Cart = ({ cartItems = [], updateCart, user }) => {
           price: getProductPrice(item)
         })),
         subtotal: subtotal,
-        tax: tax,
+        shipping: getShippingText(),
         total: total
       };
 
@@ -874,9 +1103,8 @@ const Cart = ({ cartItems = [], updateCart, user }) => {
     }, 1500);
   };
 
-  // Cancelar la compra (usuario presiona Cancelar)
-  const cancelPurchase = () => {
-    setShowConfirmPurchase(false);
+  const cancelCheckout = () => {
+    setShowCheckout(false);
   };
 
   const closeInvoice = () => {
@@ -885,32 +1113,33 @@ const Cart = ({ cartItems = [], updateCart, user }) => {
     setCenterAlert({ visible: true, message: '¡Compra realizada con éxito!' });
   };
 
-  // Renderizado: Carrito vacío — SIN CUADRO, SOLO TEXTO BONITO
+  // Renderizado: Carrito vacío
   if (safeCartItems.length === 0) {
     return (
-      <div style={{ 
-        background: '#031326', 
-        minHeight: '100vh', 
-        display: 'flex', 
-        flexDirection: 'column' 
+      <div style={{
+        background: '#030712',
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column'
       }}>
-        {/* Banner fijo arriba */}
-        <section style={{ 
-          background: "#031326", 
-          padding: "100px 20px 70px", 
-          textAlign: "center", 
-          borderBottomLeftRadius: "30px", 
-          borderBottomRightRadius: "30px", 
-          position: "relative", 
-          overflow: "hidden" 
+        <section style={{
+          background: "#031326",
+          padding: "100px 20px 70px",
+          textAlign: "center",
+          borderBottomLeftRadius: "30px",
+          borderBottomRightRadius: "30px",
+          position: "relative",
+          overflow: "hidden"
         }}>
-          <div style={{ position: "absolute", top: "-40px", left: 0, width: "100%", height: "80px", background: "#FFFF" }} />
+          {/* ✅ CORREGIDO: Era #FFFF (blanco), ahora es #031326 */}
+          <div style={{ position: "absolute", top: "-40px", left: 0, width: "100%", height: "80px", background: "#031326" }} />
           <h1 style={{ color: "white", fontSize: "3rem", fontWeight: "700", marginBottom: "20px" }}>🛒 Carrito de Compras</h1>
-          <p style={{ color: "#cbd5e1", fontSize: "1.2rem", maxWidth: "900px", margin: "0 auto", lineHeight: "1.6" }}>Gestiona todos tus productos seleccionados en un solo lugar.</p>
+          <p style={{ color: "#cbd5e1", fontSize: "1.2rem", maxWidth: "900px", margin: "0 auto", lineHeight: "1.6" }}>
+            Gestiona todos tus productos seleccionados en un solo lugar.
+          </p>
           <div style={{ position: "absolute", bottom: "-40px", left: 0, width: "100%", height: "80px", background: "#030712", borderTopLeftRadius: "50% 80%", borderTopRightRadius: "50% 80%" }} />
         </section>
 
-        {/* Contenido central - SIN CUADRO */}
         <div style={{ 
           flex: 1, 
           display: 'flex', 
@@ -949,28 +1178,30 @@ const Cart = ({ cartItems = [], updateCart, user }) => {
             }}>
               Agrega productos desde la tienda para verlos aquí
             </p>
-            <Link to="/" style={{
-              backgroundColor: '#FFC107',
-              padding: '12px 24px',
-              color: '#000',
-              fontWeight: 'bold',
-              borderRadius: '8px',
-              textDecoration: 'none',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '10px',
-              fontSize: '16px',
-              border: 'none',
-              transition: 'all 0.3s ease'
-            }}
-            onMouseOver={(e) => e.target.style.backgroundColor = '#FFD700'}
-            onMouseOut={(e) => e.target.style.backgroundColor = '#FFC107'}>
+            <Link 
+              to="/" 
+              style={{
+                backgroundColor: '#FFC107',
+                padding: '12px 24px',
+                color: '#000',
+                fontWeight: 'bold',
+                borderRadius: '8px',
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '10px',
+                fontSize: '16px',
+                border: 'none',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseOver={(e) => e.target.style.backgroundColor = '#FFD700'}
+              onMouseOut={(e) => e.target.style.backgroundColor = '#FFC107'}
+            >
               <FaShoppingCart /> Ir a la Tienda
             </Link>
           </div>
         </div>
 
-        {/* Footer siempre abajo */}
         <div style={{ 
           marginTop: 'auto',
           paddingTop: '20px',
@@ -984,30 +1215,63 @@ const Cart = ({ cartItems = [], updateCart, user }) => {
 
   // Renderizado: Carrito con productos
   return (
-    <div style={{ 
-      background: '#030712', 
-      minHeight: '100vh', 
-      display: 'flex', 
-      flexDirection: 'column' 
+    <div style={{
+      background: '#030712',
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column'
     }}>
-      {/* Modales */}
-      <CustomConfirm isOpen={showClearConfirm} onConfirm={confirmClearCart} onCancel={() => setShowClearConfirm(false)} title="¿Vaciar carrito?" message="¿Estás seguro que deseas eliminar todos los productos del carrito? Esta acción no se puede deshacer." confirmText="Vaciar Carrito" cancelText="Cancelar" type="warning" />
-      <CustomConfirm isOpen={showDeleteConfirm} onConfirm={confirmRemoveFromCart} onCancel={() => { setShowDeleteConfirm(false); setItemToDelete(null); setProductToDeleteName(''); }} title="¿Eliminar producto?" message="¿Estás seguro que deseas eliminar este producto del carrito?" productName={productToDeleteName} confirmText="Eliminar" cancelText="Cancelar" type="warning" />
-      <CenterAlert message={centerAlert.message} isVisible={centerAlert.visible} onClose={() => setCenterAlert({ visible: false, message: '' })} />
-      
-      {/* Modal de confirmación de compra */}
-      <ConfirmPurchaseModal 
-        isOpen={showConfirmPurchase} 
-        onConfirm={confirmPurchase} 
-        onCancel={cancelPurchase} 
-        total={total} 
-        subtotal={subtotal} 
-        tax={tax} 
-        itemCount={safeCartItems.length}
-        isProcessing={isProcessing} 
+      <CustomConfirm 
+        isOpen={showClearConfirm} 
+        onConfirm={confirmClearCart} 
+        onCancel={() => setShowClearConfirm(false)} 
+        title="¿Vaciar carrito?" 
+        message="¿Estás seguro que deseas eliminar todos los productos del carrito? Esta acción no se puede deshacer." 
+        confirmText="Vaciar Carrito" 
+        cancelText="Cancelar" 
+        type="warning" 
       />
       
-      {/* ✅ FACTURA MODAL — YA ESTÁ BIEN POSICIONADO */}
+      <CustomConfirm 
+        isOpen={showDeleteConfirm} 
+        onConfirm={confirmRemoveFromCart} 
+        onCancel={() => { 
+          setShowDeleteConfirm(false); 
+          setItemToDelete(null); 
+          setProductToDeleteName(''); 
+        }} 
+        title="¿Eliminar producto?" 
+        message="¿Estás seguro que deseas eliminar este producto del carrito?" 
+        productName={productToDeleteName} 
+        confirmText="Eliminar" 
+        cancelText="Cancelar" 
+        type="warning" 
+      />
+      
+      <CenterAlert 
+        message={centerAlert.message} 
+        isVisible={centerAlert.visible} 
+        onClose={() => setCenterAlert({ visible: false, message: '' })} 
+      />
+      
+      <CheckoutModal
+        isOpen={showCheckout}
+        onClose={cancelCheckout}
+        onConfirm={confirmPurchaseFromCheckout}
+        total={total}
+        subtotal={subtotal}
+        selectedMethod={selectedPaymentMethod}
+        setSelectedMethod={setSelectedPaymentMethod}
+        address={deliveryAddress}
+        setAddress={setDeliveryAddress}
+        receiptFile={receiptFile}
+        setReceiptFile={setReceiptFile}
+        isProcessing={isProcessing}
+        cartItems={safeCartItems}
+        getProductName={getProductName}
+        getProductPrice={getProductPrice}
+      />
+      
       {showInvoice && invoiceData && (
         <InvoiceModal 
           isOpen={showInvoice} 
@@ -1016,15 +1280,47 @@ const Cart = ({ cartItems = [], updateCart, user }) => {
         />
       )}
 
-      {/* Banner fijo arriba */}
-      <section style={{ background: "#031326", padding: "100px 20px 70px", textAlign: "center", borderBottomLeftRadius: "30px", borderBottomRightRadius: "30px", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", top: "-40px", left: 0, width: "100%", height: "80px", background: "#FFFF" }} />
-        <h1 style={{ color: "white", fontSize: "3rem", fontWeight: "700", marginBottom: "20px" }}>🛒 Carrito de Compras</h1>
-        <p style={{ color: "#cbd5e1", fontSize: "1.2rem", maxWidth: "900px", margin: "0 auto", lineHeight: "1.6" }}>Gestiona todos tus productos seleccionados en un solo lugar.</p>
-        <div style={{ position: "absolute", bottom: "-40px", left: 0, width: "100%", height: "80px", background: "#030712", borderTopLeftRadius: "50% 80%", borderTopRightRadius: "50% 80%" }} />
-      </section>
+      {/* MODAL DE DETALLE DE PRODUCTO (SOLO LECTURA) */}
+      {selectedDetailProduct && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 10000, padding: '15px' }} onClick={() => setSelectedDetailProduct(null)}>
+          <div style={{ background: '#0f172a', borderRadius: '14px', width: '100%', maxWidth: '500px', border: '1px solid #FFC107', padding: '0', position: 'relative', overflow: 'hidden' }} onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setSelectedDetailProduct(null)} style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(0,0,0,0.5)', border: 'none', color: '#FFC107', fontSize: '18px', cursor: 'pointer', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
+              <FaTimes />
+            </button>
+            <img src={getImageUrl(selectedDetailProduct)} alt={getProductName(selectedDetailProduct)} style={{ width: '100%', height: '280px', objectFit: 'cover' }} onError={handleImageError} />
+            <div style={{ padding: '18px' }}>
+              <h2 style={{ color: '#FFC107', fontSize: '18px', fontWeight: 'bold', margin: '0 0 10px 0' }}>{getProductName(selectedDetailProduct)}</h2>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                <span style={{ fontSize: '11px', color: '#CBD5E1', backgroundColor: 'rgba(30, 41, 59, 0.7)', padding: '3px 8px', borderRadius: '8px' }}>{getProductCategory(selectedDetailProduct)}</span>
+                {selectedDetailProduct.color && <span style={{ fontSize: '11px', color: '#CBD5E1', backgroundColor: 'rgba(30, 41, 59, 0.7)', padding: '3px 8px', borderRadius: '8px' }}>Color: {selectedDetailProduct.color}</span>}
+                {selectedDetailProduct.talla && <span style={{ fontSize: '11px', color: '#CBD5E1', backgroundColor: 'rgba(30, 41, 59, 0.7)', padding: '3px 8px', borderRadius: '8px' }}>Talla: {selectedDetailProduct.talla}</span>}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <span style={{ color: '#94a3b8', fontSize: '13px' }}>Cantidad en carrito:</span>
+                <span style={{ color: '#fff', fontSize: '14px', fontWeight: 'bold' }}>{selectedDetailProduct.quantity || 1}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '10px', borderTop: '1px solid rgba(255,193,7,0.2)' }}>
+                <span style={{ color: '#94a3b8', fontSize: '13px' }}>Precio unitario:</span>
+                <span style={{ color: '#FFC107', fontSize: '18px', fontWeight: 'bold' }}>${getProductPrice(selectedDetailProduct).toLocaleString()}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
+                <span style={{ color: '#94a3b8', fontSize: '13px' }}>Subtotal:</span>
+                <span style={{ color: '#FFC107', fontSize: '16px', fontWeight: 'bold' }}>${(getProductPrice(selectedDetailProduct) * (selectedDetailProduct.quantity || 1)).toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* ✅ Contenido SCROLLEABLE, pero sin mover el footer */}
+      {/* TÍTULO DEL CARRITO */}
+      <div style={{ maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '80px 20px 0', textAlign: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '6px' }}>
+          <FaShoppingCart style={{ color: '#FFC107', fontSize: '28px' }} />
+          <h1 style={{ color: '#FFFFFF', fontSize: '28px', fontWeight: '700', margin: 0 }}>Carrito de Compras</h1>
+        </div>
+        <p style={{ color: '#94a3b8', fontSize: '14px', margin: '0' }}>Administra tus productos y avanza en tu compra</p>
+      </div>
+
       <div style={{ 
         flex: 1, 
         display: 'flex', 
@@ -1032,7 +1328,7 @@ const Cart = ({ cartItems = [], updateCart, user }) => {
         overflow: 'hidden' 
       }}>
         <div style={{ 
-          padding: '40px 20px 20px', 
+          padding: '15px 20px 20px', 
           maxWidth: '1200px', 
           margin: '0 auto', 
           width: '100%', 
@@ -1041,19 +1337,18 @@ const Cart = ({ cartItems = [], updateCart, user }) => {
           overflowY: 'auto', 
           flex: 1
         }}>
+
           <div style={{ 
             display: 'flex', 
             gap: '20px', 
             flexWrap: 'wrap', 
             justifyContent: 'center'
           }}>
-            {/* Productos */}
             <div style={{ flex: 1, minWidth: '300px', maxWidth: '700px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                <h2 style={{ color: '#FFC107', fontSize: '16px', margin: 0 }}>Productos seleccionados ({safeCartItems.length})</h2>
-                <button onClick={handleClearCart} style={{ background: 'transparent', border: '1px solid #ff4d4d', color: '#ff4d4d', cursor: 'pointer', padding: '6px 12px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', fontWeight: 'bold' }}>
-                  <FaTrash /> Vaciar carrito
-                </button>
+                <h2 style={{ color: '#FFC107', fontSize: '16px', margin: 0 }}>
+                  Productos seleccionados ({safeCartItems.length})
+                </h2>
               </div>
 
               {safeCartItems.map((item, index) => {
@@ -1063,40 +1358,195 @@ const Cart = ({ cartItems = [], updateCart, user }) => {
                 const productName = getProductName(item);
                 
                 return (
-                  <div key={index} style={{ backgroundColor: '#0f172a', border: '1px solid rgba(255, 193, 7, 0.4)', padding: '12px', borderRadius: '10px', display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '12px' }}>
-                    <img src={getImageUrl(item)} alt={productName} style={{ width: '80px', height: '80px', borderRadius: '6px', objectFit: 'cover', border: '1px solid #FFC107' }} onError={handleImageError} />
+                  <div 
+                    key={index} 
+                    style={{ 
+                      backgroundColor: '#0f172a', 
+                      border: '1px solid rgba(255, 193, 7, 0.4)', 
+                      padding: '12px', 
+                      borderRadius: '10px', 
+                      display: 'flex', 
+                      alignItems: 'flex-start', 
+                      gap: '12px', 
+                      marginBottom: '12px' 
+                    }}
+                  >
+                    <img 
+                      src={getImageUrl(item)} 
+                      alt={productName} 
+                      style={{ 
+                        width: '80px', 
+                        height: '80px', 
+                        borderRadius: '6px', 
+                        objectFit: 'cover', 
+                        border: '1px solid #FFC107',
+                        cursor: 'pointer'
+                      }} 
+                      onError={handleImageError}
+                      onClick={() => setSelectedDetailProduct(item)}
+                    />
                     <div style={{ flex: 1 }}>
-                      <h3 style={{ margin: '0 0 5px 0', color: '#FFC107', fontSize: '14px', fontWeight: 'bold' }}>{productName}</h3>
+                      <h3 
+                        style={{ margin: '0 0 5px 0', color: '#FFC107', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}
+                        onClick={() => setSelectedDetailProduct(item)}
+                      >
+                        {productName}
+                      </h3>
                       <div style={{ display: 'flex', gap: '5px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: '10px', color: '#CBD5E1', backgroundColor: 'rgba(30, 41, 59, 0.7)', padding: '2px 6px', borderRadius: '8px' }}>{getProductCategory(item)}</span>
-                        {item.color && <span style={{ fontSize: '10px', color: '#CBD5E1', backgroundColor: 'rgba(30, 41, 59, 0.7)', padding: '2px 6px', borderRadius: '8px' }}>Color: {item.color}</span>}
-                        {item.talla && <span style={{ fontSize: '10px', color: '#CBD5E1', backgroundColor: 'rgba(30, 41, 59, 0.7)', padding: '2px 6px', borderRadius: '8px' }}>Talla: {item.talla}</span>}
+                        <span style={{ fontSize: '10px', color: '#CBD5E1', backgroundColor: 'rgba(30, 41, 59, 0.7)', padding: '2px 6px', borderRadius: '8px' }}>
+                          {getProductCategory(item)}
+                        </span>
+                        {item.color && (
+                          <span style={{ fontSize: '10px', color: '#CBD5E1', backgroundColor: 'rgba(30, 41, 59, 0.7)', padding: '2px 6px', borderRadius: '8px' }}>
+                            Color: {item.color}
+                          </span>
+                        )}
+                        {item.talla && (
+                          <span style={{ fontSize: '10px', color: '#CBD5E1', backgroundColor: 'rgba(30, 41, 59, 0.7)', padding: '2px 6px', borderRadius: '8px' }}>
+                            Talla: {item.talla}
+                          </span>
+                        )}
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ fontSize: '11px', color: '#ccc' }}>Cantidad:</span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                            <button onClick={() => updateQuantity(item.id, -1)} style={{ width: '22px', height: '22px', borderRadius: '4px', backgroundColor: 'transparent', border: '1px solid #FFC107', color: '#FFC107', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }}><FaMinus /></button>
-                            <span style={{ minWidth: '20px', textAlign: 'center', fontSize: '13px', color: '#FFFFFF', fontWeight: 'bold' }}>{quantity}</span>
-                            <button onClick={() => updateQuantity(item.id, 1)} style={{ width: '22px', height: '22px', borderRadius: '4px', backgroundColor: 'transparent', border: '1px solid #FFC107', color: '#FFC107', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }}><FaPlus /></button>
+                            <button 
+                              onClick={() => updateQuantity(item.id, -1)} 
+                              style={{ 
+                                width: '22px', 
+                                height: '22px', 
+                                borderRadius: '4px', 
+                                backgroundColor: 'transparent', 
+                                border: '1px solid #FFC107', 
+                                color: '#FFC107', 
+                                cursor: 'pointer', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'center', 
+                                fontSize: '10px' 
+                              }}
+                            >
+                              <FaMinus />
+                            </button>
+                            <span style={{ minWidth: '20px', textAlign: 'center', fontSize: '13px', color: '#FFFFFF', fontWeight: 'bold' }}>
+                              {quantity}
+                            </span>
+                            <button 
+                              onClick={() => updateQuantity(item.id, 1)} 
+                              style={{ 
+                                width: '22px', 
+                                height: '22px', 
+                                borderRadius: '4px', 
+                                backgroundColor: 'transparent', 
+                                border: '1px solid #FFC107', 
+                                color: '#FFC107', 
+                                cursor: 'pointer', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'center', 
+                                fontSize: '10px' 
+                              }}
+                            >
+                              <FaPlus />
+                            </button>
                           </div>
                         </div>
                         <div style={{ textAlign: 'right' }}>
-                          <p style={{ color: '#FFC107', fontWeight: 'bold', margin: '0 0 2px 0', fontSize: '12px' }}>${precio.toLocaleString()} c/u</p>
-                          <p style={{ color: '#FFC107', fontWeight: 'bold', margin: 0, fontSize: '14px' }}>${itemTotal.toLocaleString()}</p>
+                          <p style={{ color: '#FFC107', fontWeight: 'bold', margin: '0 0 2px 0', fontSize: '12px' }}>
+                            ${precio.toLocaleString()} c/u
+                          </p>
+                          <p style={{ color: '#FFC107', fontWeight: 'bold', margin: 0, fontSize: '14px' }}>
+                            ${itemTotal.toLocaleString()}
+                          </p>
                         </div>
                       </div>
                     </div>
-                    <button onClick={() => handleRemoveFromCart(item.id, productName)} style={{ background: 'transparent', border: '1px solid #ff4d4d', color: '#ff4d4d', cursor: 'pointer', padding: '5px 8px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '3px', fontSize: '11px', fontWeight: 'bold', transition: 'all 0.3s ease', alignSelf: 'flex-start' }} onMouseOver={(e) => e.target.style.backgroundColor = 'rgba(255, 77, 77, 0.1)'} onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}><FaTrash /></button>
+                    <button 
+                      onClick={() => handleRemoveFromCart(item.id, productName)} 
+                      style={{ 
+                        background: 'transparent', 
+                        border: '1px solid #ff4d4d', 
+                        color: '#ff4d4d', 
+                        cursor: 'pointer', 
+                        padding: '5px 8px', 
+                        borderRadius: '4px', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '3px', 
+                        fontSize: '11px', 
+                        fontWeight: 'bold', 
+                        transition: 'all 0.3s ease', 
+                        alignSelf: 'flex-start' 
+                      }} 
+                      onMouseOver={(e) => e.target.style.backgroundColor = 'rgba(255, 77, 77, 0.1)'} 
+                      onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+                    >
+                      <FaTrash />
+                    </button>
                   </div>
                 );
               })}
             </div>
 
-            {/* Resumen */}
             <div style={{ width: '320px', minWidth: '320px', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ backgroundColor: '#0f172a', border: '1px solid rgba(255, 193, 7, 0.4)', padding: '15px', borderRadius: '10px', display: 'flex', flexDirection: 'column', height: 'fit-content' }}>
-                <h2 style={{ color: '#FFC107', margin: '0 0 12px 0', textAlign: 'center', fontSize: '15px', fontWeight: 'bold' }}>Resumen del Pedido</h2>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginBottom: '10px' }}>
+                <Link 
+                  to="/" 
+                  style={{ 
+                    background: 'transparent', 
+                    border: '1px solid #FFC107', 
+                    color: '#FFC107', 
+                    cursor: 'pointer', 
+                    padding: '6px 12px', 
+                    borderRadius: '6px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '5px', 
+                    fontSize: '12px', 
+                    fontWeight: 'bold',
+                    textDecoration: 'none',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,193,7,0.1)'; }}
+                  onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                >
+                  <FaArrowLeft style={{ fontSize: '10px' }} /> Seguir comprando
+                </Link>
+                <button 
+                  onClick={handleClearCart} 
+                  style={{ 
+                    background: 'transparent', 
+                    border: '1px solid #ff4d4d', 
+                    color: '#ff4d4d', 
+                    cursor: 'pointer', 
+                    padding: '6px 12px', 
+                    borderRadius: '6px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '5px', 
+                    fontSize: '12px', 
+                    fontWeight: 'bold',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,77,77,0.1)'; }}
+                  onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                >
+                  <FaTrash /> Vaciar carrito
+                </button>
+              </div>
+              <div style={{ 
+                backgroundColor: '#0f172a', 
+                border: '1px solid rgba(255, 193, 7, 0.4)', 
+                padding: '15px', 
+                borderRadius: '10px', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                height: 'fit-content' 
+              }}>
+                <h2 style={{ color: '#FFC107', margin: '0 0 12px 0', textAlign: 'center', fontSize: '15px', fontWeight: 'bold' }}>
+                  Resumen del Pedido
+                </h2>
                 
                 <div style={{ marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid rgba(255, 193, 7, 0.2)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
@@ -1105,11 +1555,19 @@ const Cart = ({ cartItems = [], updateCart, user }) => {
                   </div>
                   {safeCartItems.slice(0, 3).map((item, index) => (
                     <div key={index} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '10px', color: '#CBD5E1' }}>
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px', paddingRight: '5px' }}>• {getProductName(item)} x{item.quantity || 1}</span>
-                      <span style={{ color: '#FFC107', fontWeight: 'bold', whiteSpace: 'nowrap' }}>${(getProductPrice(item) * (item.quantity || 1)).toLocaleString()}</span>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px', paddingRight: '5px' }}>
+                        • {getProductName(item)} x{item.quantity || 1}
+                      </span>
+                      <span style={{ color: '#FFC107', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                        ${(getProductPrice(item) * (item.quantity || 1)).toLocaleString()}
+                      </span>
                     </div>
                   ))}
-                  {safeCartItems.length > 3 && <div style={{ fontSize: '10px', color: '#CBD5E1', textAlign: 'center', marginTop: '3px' }}>Y {safeCartItems.length - 3} productos más...</div>}
+                  {safeCartItems.length > 3 && (
+                    <div style={{ fontSize: '10px', color: '#CBD5E1', textAlign: 'center', marginTop: '3px' }}>
+                      Y {safeCartItems.length - 3} productos más...
+                    </div>
+                  )}
                 </div>
                 
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '12px' }}>
@@ -1117,19 +1575,14 @@ const Cart = ({ cartItems = [], updateCart, user }) => {
                   <span style={{ color: '#FFFFFF', fontWeight: 'bold' }}>${subtotal.toLocaleString()}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '12px' }}>
-                  <span style={{ color: '#ccc' }}>IVA (19%):</span>
-                  <span style={{ color: '#FFC107', fontWeight: 'bold' }}>${tax.toLocaleString()}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '12px' }}>
                   <span style={{ color: '#ccc' }}>Envío:</span>
-                  <span style={{ color: '#4CAF50', fontWeight: 'bold' }}>GRATIS</span>
+                  <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>{getShippingText() || 'selecciona al pagar'}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px solid rgba(255, 193, 7, 0.2)', fontSize: '14px' }}>
                   <strong style={{ color: '#FFC107' }}>Total:</strong>
                   <strong style={{ color: '#FFC107', fontSize: '16px' }}>${total.toLocaleString()}</strong>
                 </div>
 
-                {/* ✅ SOLO BOTÓN FINALIZAR COMPRA */}
                 <div style={{ display: 'flex', justifyContent: 'center', marginTop: '15px' }}>
                   <button
                     onClick={handleFinishPurchase}
@@ -1150,47 +1603,42 @@ const Cart = ({ cartItems = [], updateCart, user }) => {
                     onMouseOut={(e) => e.target.style.backgroundColor = '#FFC107'}
                     disabled={isProcessing}
                   >
-                    {isProcessing ? 'Procesando...' : 'Finalizar Compra'}
+                    {isProcessing ? 'Procesando...' : 'Continuar'}
                   </button>
+                </div>
+              </div>
+
+              {/* MÉTODOS DE PAGO DECORATIVOS */}
+              <div style={{ 
+                backgroundColor: '#0f172a', 
+                border: '1px solid rgba(255, 193, 7, 0.4)', 
+                padding: '15px', 
+                borderRadius: '10px', 
+                marginTop: '12px'
+              }}>
+                <h3 style={{ color: '#FFC107', margin: '0 0 12px 0', fontSize: '14px', fontWeight: 'bold' }}>Métodos de pago</h3>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <img src="https://res.cloudinary.com/dxc5qqsjd/image/upload/v1773077199/WhatsApp_Image_2026-03-05_at_2.23.11_PM_4_ez06y3.jpg" alt="Nequi" style={{ height: '32px', borderRadius: '6px', objectFit: 'contain' }} />
+                  <img src="https://res.cloudinary.com/dxc5qqsjd/image/upload/v1773079418/WhatsApp_Image_2026-03-09_at_1.01.39_PM_lgtfn2.jpg" alt="Bancolombia" style={{ height: '32px', borderRadius: '6px', objectFit: 'contain' }} />
+                  <img src="https://res.cloudinary.com/dxc5qqsjd/image/upload/v1773077199/WhatsApp_Image_2026-03-05_at_2.23.11_PM_2_bjynti.jpg" alt="Bold" style={{ height: '32px', borderRadius: '6px', objectFit: 'contain' }} />
+                </div>
+
+                <h4 style={{ color: '#94a3b8', margin: '14px 0 8px 0', fontSize: '12px', fontWeight: '600' }}>Otros métodos</h4>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  <div style={{ backgroundColor: '#1e293b', padding: '8px 14px', borderRadius: '8px', border: '1px solid #334155' }}>
+                    <span style={{ color: '#e2e8f0', fontSize: '12px', fontWeight: '500' }}>Contraentrega</span>
+                  </div>
+                  <div style={{ backgroundColor: '#1e293b', padding: '8px 14px', borderRadius: '8px', border: '1px solid #334155' }}>
+                    <span style={{ color: '#e2e8f0', fontSize: '12px', fontWeight: '500' }}>Recoger en el local</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* ✅ BOTÓN "SEGUIR COMPRANDO" - CENTRADO Y ARRIBA DEL FOOTER */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          padding: '20px 0',
-          backgroundColor: '#030712'
-        }}>
-          <Link
-            to="/"
-            style={{
-              padding: '12px 24px',
-              backgroundColor: 'transparent',
-              border: '1px solid #FFC107',
-              borderRadius: '6px',
-              fontWeight: 'bold',
-              textAlign: 'center',
-              color: '#FFC107',
-              textDecoration: 'none',
-              fontSize: '14px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: 'all 0.3s ease',
-              whiteSpace: 'nowrap'
-            }}
-            onMouseOver={(e) => e.target.style.backgroundColor = 'rgba(255, 193, 7, 0.1)'}
-            onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
-          >
-            <FaArrowLeft style={{ fontSize: '12px' }} /> Seguir Comprando
-          </Link>
-        </div>
 
-        {/* ✅ FOOTER SIEMPRE ABAJO */}
+
         <div style={{ 
           marginTop: 'auto',
           paddingTop: '20px',

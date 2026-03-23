@@ -1,18 +1,167 @@
 // src/pages/admin/RolesPage.jsx
-import React, { useState, useMemo, useEffect, useRef } from "react";
-import AdminLayoutClean from "./AdminLayoutClean";
+import React, { useState, useMemo, useEffect } from "react";
 import { initialRoles, availablePermissions } from "../../data";
-
-// Componentes
 import SearchInput from "../../components/SearchInput";
 import EntityTable from "../../components/EntityTable";
 import UniversalModal from "../../components/UniversalModal";
 import Alert from "../../components/Alert";
 import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
 
-// ─────────────────────────────────────────────────────────────────────
-// Componente Principal
-// ─────────────────────────────────────────────────────────────────────
+// =============================================
+// COMPONENTE StatusFilter
+// =============================================
+const StatusFilter = ({ filterStatus, onFilterSelect }) => {
+  const [open, setOpen] = useState(false);
+  
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '6px', 
+          padding: '8px 12px',
+          backgroundColor: 'transparent', 
+          border: '1px solid #F5C81B', 
+          color: '#F5C81B',
+          borderRadius: '6px', 
+          fontSize: '13px',
+          cursor: 'pointer', 
+          whiteSpace: 'nowrap', 
+          minWidth: '110px', 
+          justifyContent: 'space-between', 
+          fontWeight: '600', 
+          height: '36px',
+          transition: 'all 0.2s'
+        }}
+        onMouseEnter={e => { 
+          e.target.style.backgroundColor = '#F5C81B'; 
+          e.target.style.color = '#000'; 
+        }}
+        onMouseLeave={e => { 
+          e.target.style.backgroundColor = 'transparent'; 
+          e.target.style.color = '#F5C81B'; 
+        }}
+      >
+        <span>{filterStatus}</span>
+        <svg 
+          width="12" 
+          height="12" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="2"
+          style={{ 
+            transform: open ? 'rotate(180deg)' : 'rotate(0deg)', 
+            transition: 'transform 0.2s' 
+          }}
+        >
+          <polyline points="6,9 12,15 18,9"/>
+        </svg>
+      </button>
+      {open && (
+        <div style={{
+          position: 'absolute', 
+          top: '100%', 
+          right: 0, 
+          marginTop: '4px', 
+          backgroundColor: '#000',
+          border: '1px solid #F5C81B', 
+          borderRadius: '6px', 
+          padding: '6px 0', 
+          minWidth: '120px',
+          zIndex: 1000, 
+          boxShadow: '0 4px 12px rgba(245, 200, 27, 0.3)'
+        }}>
+          {['Todos', 'Activos', 'Inactivos'].map(status => (
+            <button 
+              key={status} 
+              onClick={() => { onFilterSelect(status); setOpen(false); }}
+              style={{
+                width: '100%', 
+                padding: '6px 12px', 
+                backgroundColor: filterStatus === status ? '#F5C81B' : 'transparent',
+                border: 'none', 
+                color: filterStatus === status ? '#000' : '#F5C81B', 
+                fontSize: '13px',
+                textAlign: 'left', 
+                cursor: 'pointer', 
+                fontWeight: filterStatus === status ? '600' : '400',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={e => filterStatus !== status && (
+                e.target.style.backgroundColor = '#F5C81B',
+                e.target.style.color = '#000'
+              )}
+              onMouseLeave={e => filterStatus !== status && (
+                e.target.style.backgroundColor = 'transparent',
+                e.target.style.color = '#F5C81B'
+              )}
+            >
+              {status}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// =============================================
+// COMPONENTE FormField (modificado para errores sin scroll)
+// =============================================
+const FormField = ({ label, required, children, error, isViewMode = false, viewValue }) => {
+  if (isViewMode) {
+    return (
+      <div>
+        <label style={{ fontSize: '12px', color: '#e2e8f0', display: 'block', marginBottom: '2px' }}>
+          {label}:
+        </label>
+        <div style={{
+          padding: '6px 10px', 
+          backgroundColor: '#1e293b', 
+          border: '1px solid #334155', 
+          borderRadius: '6px',
+          color: label === 'Estado' ? (viewValue === 'Activo' ? '#10b981' : '#ef4444') : '#f1f5f9',
+          fontSize: '13px', 
+          minHeight: '32px', 
+          display: 'flex', 
+          alignItems: 'center'
+        }}>
+          {viewValue || 'N/A'}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <label style={{ fontSize: '12px', color: '#e2e8f0', display: 'block', marginBottom: '2px' }}>
+        {label}: {required && <span style={{ color: '#ef4444' }}>*</span>}
+      </label>
+      {children}
+      {error && (
+        <div style={{ 
+          color: '#f87171', 
+          fontSize: '10px', 
+          marginTop: '2px',
+          height: '14px',
+          lineHeight: '14px',
+          overflow: 'hidden',
+          whiteSpace: 'nowrap',
+          textOverflow: 'ellipsis'
+        }}>
+          {error}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// =============================================
+// PÁGINA PRINCIPAL RolesPage
+// =============================================
 const RolesPage = () => {
   // ── Estados
   const [roles, setRoles] = useState([]);
@@ -28,7 +177,7 @@ const RolesPage = () => {
     isActive: true,
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState("create"); // "create" | "edit" | "details"
+  const [modalMode, setModalMode] = useState("create");
 
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [roleToDelete, setRoleToDelete] = useState(null);
@@ -39,9 +188,6 @@ const RolesPage = () => {
     name: false,
     permissions: false
   });
-
-  // ── Ref para el contenedor de la tabla
-  const tableContainerRef = useRef(null);
 
   // ── Helpers
   const showAlert = (message, type = "success") => {
@@ -111,12 +257,12 @@ const RolesPage = () => {
     else if (totalPages === 0) setCurrentPage(1);
   }, [totalPages, currentPage]);
 
-  // ── Columnas de la tabla (Corregida la descripción)
+  // ── Columnas de la tabla
   const roleColumns = [
     { 
       header: "Rol", 
       field: "name", 
-      width: "200px", 
+      width: "25%",
       render: (item) => (
         <span style={{ 
           color: '#fff', 
@@ -134,7 +280,7 @@ const RolesPage = () => {
     { 
       header: "Descripción", 
       field: "description", 
-      width: "300px", 
+      width: "50%",
       render: (item) => (
         <span style={{ 
           color: '#fff', 
@@ -143,7 +289,7 @@ const RolesPage = () => {
           whiteSpace: 'normal', 
           wordBreak: 'break-word',
           maxHeight: '3em',
-          overflow: 'hidden',
+          overflow: 'hidden'
         }}>
           {item.description}
         </span>
@@ -152,7 +298,7 @@ const RolesPage = () => {
     { 
       header: "Estado", 
       field: "estado",
-      width: "120px",
+      width: "25%",
       render: (r) => (
         <span style={{
           color: r.isActive ? "#10b981" : "#ef4444",
@@ -169,7 +315,7 @@ const RolesPage = () => {
     }
   ];
 
-  // ── Handlers para EntityTable
+  // ── Handlers
   const handleView = (role) => {
     setSelectedRole(role);
     setModalMode("details");
@@ -192,13 +338,10 @@ const RolesPage = () => {
       showAlert('El rol "Administrador" no se puede eliminar', "error");
       return;
     }
-    
-    // Verificar si el rol está activo
     if (role.isActive) {
       showAlert('No se puede eliminar un rol activo. Primero desactívelo.', "error");
       return;
     }
-    
     setRoleToDelete(role);
     setIsConfirmOpen(true);
   };
@@ -208,11 +351,9 @@ const RolesPage = () => {
       showAlert('El rol "Administrador" siempre está activo', "error");
       return;
     }
-    
     setRoles((prev) =>
       prev.map((r) => (r.id === role.id ? { ...r, isActive: !r.isActive } : r))
     );
-    
     showAlert(
       `Rol "${role.name}" ${!role.isActive ? 'activado' : 'desactivado'} correctamente`,
       !role.isActive ? 'add' : 'delete'
@@ -276,113 +417,13 @@ const RolesPage = () => {
     setCurrentPage(1);
   };
 
-  // ── Componente interno: Filtro de Estado
-  const StatusFilter = () => {
-    const [open, setOpen] = useState(false);
-    
-    return (
-      <div style={{ position: 'relative' }}>
-        <button
-          onClick={() => setOpen(!open)}
-          style={{
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '6px', 
-            padding: '8px 12px',
-            backgroundColor: 'transparent', 
-            border: '1px solid #F5C81B', 
-            color: '#F5C81B',
-            borderRadius: '6px', 
-            fontSize: '13px',
-            cursor: 'pointer', 
-            whiteSpace: 'nowrap', 
-            minWidth: '110px', 
-            justifyContent: 'space-between', 
-            fontWeight: '600', 
-            height: '36px',
-            transition: 'all 0.2s'
-          }}
-          onMouseEnter={e => { 
-            e.target.style.backgroundColor = '#F5C81B'; 
-            e.target.style.color = '#000'; 
-          }}
-          onMouseLeave={e => { 
-            e.target.style.backgroundColor = 'transparent'; 
-            e.target.style.color = '#F5C81B'; 
-          }}
-        >
-          <span>{filterStatus}</span>
-          <svg 
-            width="12" 
-            height="12" 
-            viewBox="0 0 24 24" 
-            fill="none" 
-            stroke="currentColor" 
-            strokeWidth="2"
-            style={{ 
-              transform: open ? 'rotate(180deg)' : 'rotate(0deg)', 
-              transition: 'transform 0.2s' 
-            }}
-          >
-            <polyline points="6,9 12,15 18,9"/>
-          </svg>
-        </button>
-        {open && (
-          <div style={{
-            position: 'absolute', 
-            top: '100%', 
-            right: 0, 
-            marginTop: '4px', 
-            backgroundColor: '#1F2937',
-            border: '1px solid #F5C81B', 
-            borderRadius: '6px', 
-            padding: '6px 0', 
-            minWidth: '120px',
-            zIndex: 1000, 
-            boxShadow: '0 4px 12px rgba(245, 200, 27, 0.3)'
-          }}>
-            {['Todos', 'Activos', 'Inactivos'].map(status => (
-              <button 
-                key={status} 
-                onClick={() => { handleFilterSelect(status); setOpen(false); }}
-                style={{
-                  width: '100%', 
-                  padding: '6px 12px', 
-                  backgroundColor: filterStatus === status ? '#F5C81B' : 'transparent',
-                  border: 'none', 
-                  color: filterStatus === status ? '#000' : '#F5C81B', 
-                  fontSize: '13px',
-                  textAlign: 'left', 
-                  cursor: 'pointer', 
-                  fontWeight: filterStatus === status ? '600' : '400',
-                  transition: 'all 0.2s'
-                }}
-                onMouseEnter={e => filterStatus !== status && (
-                  e.target.style.backgroundColor = '#F5C81B',
-                  e.target.style.color = '#000'
-                )}
-                onMouseLeave={e => filterStatus !== status && (
-                  e.target.style.backgroundColor = 'transparent',
-                  e.target.style.color = '#F5C81B'
-                )}
-              >
-                {status}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // ── Función para renderizar permisos en 3 o 2 columnas verticales, sin fondo (Mismos estilos que antes)
+  // ── Render permisos (MODIFICADO: 2 columnas, sin fondo azul)
   const renderPermissionsColumns = (permissions, readOnly = false, isAdmin = false) => {
-    // Si es administrador, mostramos en 2 columnas para ahorrar espacio vertical
-    const numColumns = isAdmin ? 2 : 3;
+    // Mostrar en 2 columnas siempre
+    const numColumns = 2;
     const permissionsPerColumn = Math.ceil(availablePermissions.length / numColumns);
     
-    // Crear las columnas
-    return [0, 1, 2].slice(0, numColumns).map((colIndex) => {
+    return [0, 1].map((colIndex) => {
       const start = colIndex * permissionsPerColumn;
       const end = start + permissionsPerColumn;
       const columnPermissions = availablePermissions.slice(start, end);
@@ -393,9 +434,8 @@ const RolesPage = () => {
           style={{ 
             display: 'flex', 
             flexDirection: 'column', 
-            gap: '8px',
+            gap: '6px',
             flex: 1,
-            padding: '8px 0',
           }}
         >
           {columnPermissions.map((p) => {
@@ -407,13 +447,15 @@ const RolesPage = () => {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
-                  color: '#cbd5e1',
+                  gap: '6px',
+                  color: isChecked ? '#F5C81B' : '#94a3b8',
                   cursor: readOnly ? 'default' : 'pointer',
-                  fontSize: '12px',
-                  padding: '2px 0',
-                  minHeight: '22px',
+                  fontSize: '11px',
+                  padding: '2px 4px',
+                  minHeight: '20px',
                   width: '100%',
+                  backgroundColor: 'transparent', // SIN FONDO AZUL
+                  borderRadius: '4px',
                 }}
               >
                 <input
@@ -435,19 +477,18 @@ const RolesPage = () => {
                   }}
                   disabled={readOnly || isAdmin}
                   style={{
-                    accentColor: isChecked ? '#F5C81B' : '#64748b',
-                    width: '14px',
-                    height: '14px',
+                    accentColor: '#F5C81B',
+                    width: '12px',
+                    height: '12px',
                     cursor: readOnly || isAdmin ? 'default' : 'pointer',
                     flexShrink: 0,
-                    opacity: isChecked ? 1 : 0.6
                   }}
                 />
 
                 <span
                   style={{
-                    color: isAdmin ? '#F5C81B' : '#cbd5e1',
-                    fontWeight: isAdmin ? '600' : '400',
+                    color: isChecked ? '#F5C81B' : '#94a3b8',
+                    fontWeight: isChecked ? '500' : '400',
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
@@ -456,22 +497,6 @@ const RolesPage = () => {
                 >
                   {p.label}
                 </span>
-
-                {isAdmin && (
-                  <span
-                    style={{
-                      marginLeft: 'auto',
-                      fontSize: '10px',
-                      color: '#10b981',
-                      backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                      padding: '1px 4px',
-                      borderRadius: '3px',
-                      flexShrink: 0,
-                    }}
-                  >
-                    ✓
-                  </span>
-                )}
               </label>
             );
           })}
@@ -480,268 +505,29 @@ const RolesPage = () => {
     });
   };
 
-  // ── Render
-  return (
-    <AdminLayoutClean>
-      {/* Alerta global */}
-      {alert.show && (
-        <Alert 
-          message={alert.message} 
-          type={alert.type} 
-          onClose={() => setAlert({ show: false, message: '', type: 'success' })} 
-        />
-      )}
+  // ── Render modal (MODIFICADO: botones más pequeños)
+  const renderModalContent = () => {
+    const isView = modalMode === 'details';
+    const isEdit = modalMode === 'edit';
+    const isCreate = modalMode === 'create';
+    const isAdmin = isView && selectedRole && isAdministrador(selectedRole);
 
+    return (
       <div style={{ 
         display: 'flex', 
-        flexDirection: 'column',
-        padding: '0 12px 0 12px',
-        
-        flex: 1,
+        flexDirection: 'column', 
+        gap: '10px'
       }}>
-        {/* ENCABEZADO */}
-        <div style={{ marginBottom: '8px' }}>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center', 
-            marginBottom: '6px'
-          }}>
-            <div>
-              <h1 style={{ color: '#fff', fontSize: '20px', fontWeight: '700', margin: 0, lineHeight: '1.2' }}>
-                Roles
-              </h1>
-              <p style={{ color: '#9CA3AF', fontSize: '15px', margin: 0, lineHeight: '1.3' }}>
-                Gestiona los roles y permisos del sistema
-              </p>
-            </div>
-            <button 
-              onClick={openModal} 
-              style={{ 
-                padding: '6px 13px', 
-                backgroundColor: 'transparent', 
-                border: '1px solid #F5C81B', 
-                color: '#F5C81B', 
-                borderRadius: '4px', 
-                fontSize: '11px', 
-                cursor: 'pointer', 
-                whiteSpace: 'nowrap', 
-                minWidth: '100px', 
-                fontWeight: '600', 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '3px', 
-                height: '35px' 
-              }} 
-              onMouseEnter={e => { e.target.style.backgroundColor = '#F5C81B'; e.target.style.color = '#000'; }}
-              onMouseLeave={e => { e.target.style.backgroundColor = 'transparent'; e.target.style.color = '#F5C81B'; }}
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ flex: 2 }}>
+            <FormField 
+              label="Nombre" 
+              required={!isView}
+              error={!isView && fieldErrors.name ? "El nombre del rol es obligatorio" : null}
+              isViewMode={isView}
+              viewValue={selectedRole?.name}
             >
-              Registrar Rol
-            </button>
-          </div>
-
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-            <SearchInput 
-              value={searchTerm}
-              onChange={setSearchTerm}
-              placeholder="Buscar por nombre o descripción..."
-              onClear={clearSearch}
-              fullWidth={true}
-            />
-            <StatusFilter />
-          </div>
-        </div>
-        
-
-        {/* TABLA + PAGINACIÓN */}
-        <div 
-          ref={tableContainerRef}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            flex: 1,
-            minHeight: 0,
-            
-            border: '1px solid #F5C81B',
-            borderRadius: '6px',
-            overflow: 'hidden',
-            marginTop: '8px',
-          }}
-        >
-          <div style={{
-            flex: 1,
-            minHeight: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            overflowY: 'auto',
-          }}>
-            {/* 🔽 AQUÍ ESTÁ LA LLAMADA MODIFICADA A EntityTable */}
-            <EntityTable
-              entities={paginatedRoles}
-              columns={roleColumns}
-              itemsPerPage={itemsPerPage}
-              onView={handleView}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              // 🔽 AGREGAR TOGGLE PARA ROLES
-              onAnular={(role) => handleToggleStatus(role)}
-              onReactivar={(role) => handleToggleStatus(role)}
-              idField="id"
-              // 🔽 IMPORTANTE: Usar 'isActive' como campo de estado
-              estadoField="isActive"
-              isActiveField="isActive"
-              moduleType="generic"
-              showPagination={false}
-              containerRef={tableContainerRef}
-              // 🔽 FUNCIÓN PARA DETECTAR ADMINISTRADOR
-              isAdministradorCheck={isAdministrador}
-              // 🔽 PERSONALIZAR ACCIONES PARA ADMINISTRADOR
-              hideActionsForCanceled={false}
-            />
-          </div>
-
-          {/* PAGINACIÓN */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '8px 12px',
-            backgroundColor: '#151822',
-            borderTop: '1px solid #F5C81B',
-            fontSize: '13px',
-            color: '#e0e0e0',
-            height: '50px',
-            boxSizing: 'border-box',
-            flexShrink: 0
-          }}>
-            <span style={{ fontWeight: '500' }}>
-              Mostrando {showingStart}–{endIndex} de {filteredRoles.length} roles
-            </span>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <button
-                onClick={() => setCurrentPage(currentPage - 1)}
-                disabled={currentPage === 1}
-                style={{
-                  background: 'transparent',
-                  border: '1px solid #F5C81B',
-                  color: currentPage === 1 ? '#6B7280' : '#F5C81B',
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  fontSize: '12px',
-                  cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-                  fontWeight: '600',
-                  transition: 'all 0.2s ease',
-                  outline: 'none',
-                  minWidth: '90px',
-                }}
-                onMouseEnter={(e) => {
-                  if (currentPage > 1) {
-                    e.currentTarget.style.backgroundColor = '#F5C81B';
-                    e.currentTarget.style.color = '#000';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (currentPage > 1) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                    e.currentTarget.style.color = '#F5C81B';
-                  }
-                }}
-              >
-                ‹ Anterior
-              </button>
-              
-              <span style={{
-                padding: '6px 12px',
-                fontSize: '12px',
-                fontWeight: '600',
-                color: '#F5C81B',
-                minWidth: '60px',
-                textAlign: 'center'
-              }}>
-                Página {currentPage} de {totalPages}
-              </span>
-
-              <button
-                onClick={() => setCurrentPage(currentPage + 1)}
-                disabled={currentPage >= totalPages}
-                style={{
-                  background: 'transparent',
-                  border: '1px solid #F5C81B',
-                  color: currentPage >= totalPages ? '#6B7280' : '#F5C81B',
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  fontSize: '12px',
-                  cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
-                  fontWeight: '600',
-                  transition: 'all 0.2s ease',
-                  outline: 'none',
-                  minWidth: '90px',
-                }}
-                onMouseEnter={(e) => {
-                  if (currentPage < totalPages) {
-                    e.currentTarget.style.backgroundColor = '#F5C81B';
-                    e.currentTarget.style.color = '#000';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (currentPage < totalPages) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                    e.currentTarget.style.color = '#F5C81B';
-                  }
-                }}
-              >
-                Siguiente ›
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <UniversalModal
-        isOpen={isModalOpen}
-        onClose={closeModal}
-        title={modalMode === 'create' ? 'Registrar Rol' : modalMode === 'edit' ? 'Editar Rol' : 'Detalles del Rol'}
-        subtitle={modalMode === 'create' ? 'Complete la información para registrar un nuevo rol' : modalMode === 'edit' ? 'Modifique la información del rol' : 'Información detallada del rol'}
-        showActions={false}
-        actionLabel={modalMode === 'create' ? 'Guardar' : 'Guardar Cambios'}
-        onSave={handleSave}
-        customStyles={{ 
-          content: { 
-            padding: '12px 16px',
-            maxWidth: '400px',
-            width: '100%',
-          },
-        }}
-      >
-        <div style={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          gap: '10px', 
-          padding: '0px',
-        }}>
-          {/* PRIMERA FILA: NOMBRE Y ESTADO UNO AL LADO DEL OTRO */}
-          <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
-            {/* NOMBRE DEL ROL */}
-            <div style={{ flex: 2 }}>
-              <label style={{ fontSize: '12px', color: '#e2e8f0', fontWeight: '500', marginBottom: '2px', display: 'block' }}>
-                Nombre: {modalMode !== 'details' && <span style={{ color: '#ef4444' }}>*</span>}
-              </label>
-              {modalMode === 'details' ? (
-                <div style={{
-                  padding: '6px 10px', 
-                  backgroundColor: '#1e293b', 
-                  border: '1px solid #334155', 
-                  borderRadius: '4px',
-                  color: '#F5C81B',
-                  fontSize: '13px', 
-                  minHeight: '32px', 
-                  display: 'flex', 
-                  alignItems: 'center',
-                  fontWeight: '600'
-                }}>
-                  {selectedRole?.name}
-                </div>
-              ) : (
+              {!isView && (
                 <input
                   type="text"
                   value={currentRole.name}
@@ -754,198 +540,422 @@ const RolesPage = () => {
                   }}
                   style={{
                     width: '100%', 
-                    padding: '6px 10px', 
-                    borderRadius: '4px',
-                    border: `1px solid ${fieldErrors.name ? '#ef4444' : '#334155'}`, 
-                    backgroundColor: '#1e293b',
+                    background: '#1e293b', 
                     color: '#fff', 
-                    fontSize: '12px', 
-                    height: '32px', 
+                    border: fieldErrors.name ? '1px solid #ef4444' : '1px solid #334155',
+                    height: '30px', 
+                    borderRadius: '4px',
+                    padding: '0 6px',
+                    fontSize: '12px',
                     outline: 'none'
                   }}
                 />
               )}
-              {modalMode !== 'details' && fieldErrors.name && (
-                <span style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px', display: 'block' }}>
-                  El nombre del rol es obligatorio
-                </span>
-              )}
-            </div>
-
-            {/* ESTADO - SOLO EN DETALLES */}
-            {modalMode === 'details' && (
-              <div style={{ flex: 1 }}>
-                <label style={{ fontSize: '12px', color: '#e2e8f0', fontWeight: '500', marginBottom: '2px', display: 'block' }}>
-                  Estado:
-                </label>
-                <div style={{
-                  padding: '6px 10px', 
-                  backgroundColor: '#1e293b', 
-                  border: '1px solid #334155', 
-                  borderRadius: '4px',
-                  color: selectedRole?.isActive ? '#10b981' : '#ef4444', 
-                  fontSize: '13px', 
-                  minHeight: '32px', 
-                  display: 'flex', 
-                  alignItems: 'center',
-                  fontWeight: '600'
-                }}>
-                  {selectedRole?.isActive ? 'Activo' : 'Inactivo'}
-                </div>
-              </div>
-            )}
+            </FormField>
           </div>
 
-          {/* DESCRIPCIÓN */}
-          <div>
-            <label style={{ fontSize: '12px', color: '#e2e8f0', fontWeight: '500', marginBottom: '2px', display: 'block' }}>
-              Descripción:
-            </label>
-            {modalMode === 'details' ? (
-              <div style={{
-                padding: '6px 10px', 
-                backgroundColor: '#1e293b', 
-                border: '1px solid #334155', 
-                borderRadius: '4px',
-                color: '#fff', 
-                fontSize: '13px', 
-                minHeight: '32px', 
-                display: 'flex', 
-                alignItems: 'center'
-              }}>
-                {selectedRole?.description || 'Sin descripción'}
-              </div>
-            ) : (
-              <input
-                type="text"
-                value={currentRole.description || ""}
-                placeholder="Breve descripción"
-                onChange={(e) => setCurrentRole({ ...currentRole, description: e.target.value })}
-                style={{
-                  width: '100%', 
-                  padding: '6px 10px', 
-                  borderRadius: '4px',
-                  border: '1px solid #334155', 
-                  backgroundColor: '#1e293b',
-                  color: '#fff', 
-                  fontSize: '12px', 
-                  height: '32px', 
-                  outline: 'none'
-                }}
+          {isView && (
+            <div style={{ flex: 1 }}>
+              <FormField 
+                label="Estado"
+                isViewMode={isView}
+                viewValue={selectedRole?.isActive ? 'Activo' : 'Inactivo'}
               />
-            )}
-          </div>
-
-          {/* PERMISOS */}
-          <div>
-            <label style={{ fontSize: '12px', color: '#ffffff', fontWeight: '600', marginBottom: '4px', display: 'block' }}>
-              Permisos: {modalMode !== 'details' && <span style={{ color: '#ef4444' }}>*</span>}
-            </label>
-            
-            <div style={{
-              display: 'flex',
-              gap: '20px',
-              justifyContent: 'space-between',
-              padding: '8px 0',
-              border: 'none',
-              borderRadius: '4px',
-              backgroundColor: 'transparent',
-              minHeight: '140px',
-            }}>
-              {renderPermissionsColumns(
-                modalMode === 'details' ? selectedRole?.permissions : currentRole.permissions,
-                modalMode === 'details',
-                modalMode === 'details' && isAdministrador(selectedRole)
-              )}
-            </div>
-            
-            {modalMode !== 'details' && fieldErrors.permissions && (
-              <span style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px', display: 'block' }}>
-                Debe seleccionar al menos un permiso
-              </span>
-            )}
-            
-            {modalMode === 'details' && isAdministrador(selectedRole) && (
-              <div style={{
-                marginTop: '10px',
-                padding: '6px 10px',
-                backgroundColor: 'rgba(245, 200, 27, 0.1)',
-                border: '1px solid rgba(245, 200, 27, 0.3)',
-                borderRadius: '4px',
-                fontSize: '11px',
-                color: '#F5C81B',
-              }}>
-                ⓘ El rol Administrador tiene todos los permisos del sistema.
-              </div>
-            )}
-          </div>
-
-          {/* BOTONES DE ACCIÓN */}
-          {(modalMode === 'create' || modalMode === 'edit') && (
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'flex-end', 
-              gap: '8px',
-              marginTop: '4px',
-              paddingTop: '6px',
-              borderTop: '1px solid #334155'
-            }}>
-              <button
-                onClick={closeModal}
-                style={{
-                  backgroundColor: 'transparent',
-                  border: '1px solid #94a3b8',
-                  color: '#94a3b8',
-                  padding: '6px 16px',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  minWidth: '80px',
-                  height: '30px',
-                  whiteSpace: 'nowrap',
-                }}
-                onMouseEnter={e => {
-                  e.target.style.backgroundColor = '#94a3b8';
-                  e.target.style.color = '#000';
-                }}
-                onMouseLeave={e => {
-                  e.target.style.backgroundColor = 'transparent';
-                  e.target.style.color = '#94a3b8';
-                }}
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleSave}
-                style={{
-                  backgroundColor: '#F5C81B',
-                  border: 'none',
-                  color: '#0f172a',
-                  padding: '6px 16px',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  minWidth: '90px',
-                  height: '30px',
-                  whiteSpace: 'nowrap',
-                }}
-                onMouseEnter={e => {
-                  e.target.style.backgroundColor = '#ffd950';
-                }}
-                onMouseLeave={e => {
-                  e.target.style.backgroundColor = '#F5C81B';
-                }}
-              >
-                {modalMode === 'create' ? 'Guardar' : 'Guardar Cambios'}
-              </button>
             </div>
           )}
         </div>
+
+        <FormField 
+          label="Descripción"
+          isViewMode={isView}
+          viewValue={selectedRole?.description || 'Sin descripción'}
+        >
+          {!isView && (
+            <input
+              type="text"
+              value={currentRole.description || ""}
+              placeholder="Breve descripción"
+              onChange={(e) => setCurrentRole({ ...currentRole, description: e.target.value })}
+              style={{
+                width: '100%', 
+                background: '#1e293b', 
+                color: '#fff', 
+                border: '1px solid #334155',
+                height: '30px', 
+                borderRadius: '4px',
+                padding: '0 6px',
+                fontSize: '12px',
+                outline: 'none'
+              }}
+            />
+          )}
+        </FormField>
+
+        <div style={{ position: 'relative' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+            <label style={{ fontSize: '12px', color: '#e2e8f0' }}>
+              Permisos: {!isView && <span style={{ color: '#ef4444' }}>*</span>}
+            </label>
+          </div>
+          
+          <div style={{
+            display: 'flex',
+            gap: '16px',
+            backgroundColor: "#1a1a1a", // Fondo más oscuro
+            border: "1px solid #333", 
+            borderRadius: "4px",
+            padding: "10px",
+            minHeight: '120px',
+            overflowY: 'auto'
+          }}>
+            {renderPermissionsColumns(
+              isView ? selectedRole?.permissions : currentRole.permissions,
+              isView,
+              isAdmin
+            )}
+          </div>
+          
+          {!isView && fieldErrors.permissions && (
+            <div style={{ 
+              color: '#f87171', 
+              fontSize: '10px', 
+              marginTop: '2px',
+              height: '14px',
+              lineHeight: '14px',
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              textOverflow: 'ellipsis'
+            }}>
+              Debe seleccionar al menos un permiso
+            </div>
+          )}
+          
+          {isAdmin && (
+            <div style={{
+              marginTop: '4px',
+              padding: '4px 8px',
+              backgroundColor: 'rgba(245, 200, 27, 0.1)',
+              border: '1px solid rgba(245, 200, 27, 0.3)',
+              borderRadius: '4px',
+              fontSize: '10px',
+              color: '#F5C81B',
+              lineHeight: '1.3',
+              minHeight: '20px'
+            }}>
+              ⓘ El rol Administrador tiene todos los permisos del sistema.
+            </div>
+          )}
+        </div>
+
+        {(isCreate || isEdit) && (
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'flex-end', 
+            gap: '8px',
+            marginTop: '8px',
+            paddingTop: '8px',
+            borderTop: '1px solid #333'
+          }}>
+            <button
+              onClick={closeModal}
+              style={{
+                background: 'transparent',
+                border: '1px solid #666',
+                color: '#aaa',
+                padding: '4px 12px',
+                borderRadius: '4px',
+                fontSize: '11px',
+                cursor: 'pointer',
+                minWidth: '70px',
+                height: '28px'
+              }}
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleSave}
+              style={{
+                background: '#F5C81B',
+                color: '#000',
+                border: 'none',
+                padding: '4px 12px',
+                borderRadius: '4px',
+                fontSize: '11px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                minWidth: '80px',
+                height: '28px'
+              }}
+            >
+              {isCreate ? 'Guardar' : 'Actualizar'}
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ── Render Principal
+  return (
+    <>
+      {alert.show && (
+        <Alert 
+          message={alert.message} 
+          type={alert.type} 
+          onClose={() => setAlert({ show: false, message: '', type: 'success' })} 
+        />
+      )}
+
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        padding: "4px 12px 0 12px",
+        flex: 1,
+        height: "100%",
+        backgroundColor: '#000'
+      }}>
+        {/* ENCABEZADO */}
+        <div style={{ marginBottom: "8px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+            <div>
+              <h1 style={{ color: "#fff", fontSize: "20px", fontWeight: "700", margin: 0, lineHeight: "1.2" }}>
+                Roles
+              </h1>
+              <p style={{ color: "#9CA3AF", fontSize: "15px", margin: 0, lineHeight: "1.3" }}>
+                Gestiona los roles y permisos del sistema
+              </p>
+            </div>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button
+                onClick={openModal}
+                style={{
+                  padding: "6px 13px",
+                  backgroundColor: "transparent",
+                  border: "1px solid #F5C81B",
+                  color: "#F5C81B",
+                  borderRadius: "4px",
+                  fontSize: "11px",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  minWidth: "100px",
+                  fontWeight: "600",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "3px",
+                  height: "35px",
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = "#F5C81B";
+                  e.target.style.color = "#000";
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = "transparent";
+                  e.target.style.color = "#F5C81B";
+                }}
+              >
+                Registrar Rol
+              </button>
+            </div>
+          </div>
+          
+          {/* Buscador y Filtro */}
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <div style={{ flex: 1 }}>
+              <SearchInput
+                value={searchTerm}
+                onChange={setSearchTerm}
+                placeholder="Buscar por nombre o descripción..."
+                onClear={clearSearch}
+                fullWidth={true}
+              />
+            </div>
+            <StatusFilter filterStatus={filterStatus} onFilterSelect={handleFilterSelect} />
+          </div>
+        </div>
+
+        {/* CONTENEDOR PRINCIPAL */}
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          borderRadius: '6px',
+          border: '1px solid #F5C81B',
+          overflow: 'hidden',
+          backgroundColor: '#000',
+        }}>
+          {/* Tabla */}
+          <div style={{
+            flex: 1,
+            overflow: 'auto',
+          }}>
+            <EntityTable 
+              entities={paginatedRoles} 
+              columns={roleColumns} 
+              onView={handleView} 
+              onEdit={handleEdit} 
+              onDelete={handleDelete}
+              onAnular={handleToggleStatus}
+              onReactivar={handleToggleStatus}
+              idField="id"
+              estadoField="isActive"
+              isActiveField="isActive"
+              moduleType="generic"
+              showPagination={false}
+              isAdministradorCheck={isAdministrador}
+              hideActionsForCanceled={false}
+              tableStyle={{
+                width: '100%',
+                borderCollapse: 'collapse',
+                tableLayout: 'fixed',
+              }}
+              headerStyle={{
+                padding: '10px 12px',
+                textAlign: 'left',
+                fontWeight: '600',
+                fontSize: '12px',
+                color: '#F5C81B',
+                borderBottom: '1px solid #F5C81B',
+                backgroundColor: '#151822',
+                position: 'sticky',
+                top: 0,
+                zIndex: 1
+              }}
+              rowStyle={{
+                borderBottom: '1px solid #333',
+                backgroundColor: '#000',
+                transition: 'background-color 0.2s'
+              }}
+              cellStyle={{
+                padding: '10px 12px',
+                verticalAlign: 'middle'
+              }}
+            />
+          </div>
+
+          {/* PAGINACIÓN */}
+          <div style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "8px 12px",
+            backgroundColor: "#151822",
+            borderTop: '1px solid #F5C81B',
+            fontSize: "12px",
+            color: "#e0e0e0",
+            height: "48px",
+            boxSizing: "border-box",
+          }}>
+            <span>
+              Mostrando {showingStart}–{endIndex} de {filteredRoles.length} roles
+            </span>
+            <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+              <button
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid #F5C81B',
+                  color: currentPage === 1 ? '#6B7280' : '#F5C81B',
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                  fontWeight: '600',
+                  minWidth: '90px',
+                }}
+              >
+                ‹ Anterior
+              </button>
+              <span style={{
+                padding: '6px 12px',
+                fontSize: '12px',
+                fontWeight: '600',
+                color: '#F5C81B',
+                minWidth: '60px',
+                textAlign: 'center'
+              }}>
+                Página {currentPage} de {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage >= totalPages}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid #F5C81B',
+                  color: currentPage >= totalPages ? '#6B7280' : '#F5C81B',
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
+                  fontWeight: '600',
+                  minWidth: '90px',
+                }}
+              >
+                Siguiente ›
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* MODAL - MÁS ESTRECHO, NEGRO Y BORDE AMARILLO DELGADO */}
+      <UniversalModal 
+        isOpen={isModalOpen} 
+        onClose={closeModal} 
+        title={
+          modalMode === 'create' ? 'Registrar Rol' : 
+          modalMode === 'edit' ? 'Editar Rol' : 
+          'Detalles del Rol'
+        }
+        subtitle={
+          modalMode === 'create' ? 'Complete la información para registrar un nuevo rol' : 
+          modalMode === 'edit' ? 'Modifique la información del rol' : 
+          'Información detallada del rol'
+        }
+        showActions={false}
+        customStyles={{
+          overlay: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0
+          },
+          content: { 
+            padding: '16px',
+            backgroundColor: '#000',
+            border: '0.5px solid #F5C81B',
+            borderRadius: '8px',
+            maxWidth: '360px',
+            width: '90%',
+            maxHeight: '80vh',
+            overflowY: 'auto',
+            position: 'relative',
+            margin: 0,
+            inset: 'auto',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5)'
+          },
+          title: {
+            color: '#fff',
+            fontSize: '16px',
+            fontWeight: '600',
+            marginBottom: '4px'
+          },
+          subtitle: {
+            color: '#9CA3AF',
+            fontSize: '12px',
+            marginBottom: '16px'
+          }
+        }}
+      >
+        {renderModalContent()}
       </UniversalModal>
 
-      {/* Confirmar eliminación */}
       <ConfirmDeleteModal
         isOpen={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}
@@ -953,8 +963,8 @@ const RolesPage = () => {
         entityName="rol"
         entityData={roleToDelete}
       />
-    </AdminLayoutClean>
+    </>
   );
 };
-
+ 
 export default RolesPage;

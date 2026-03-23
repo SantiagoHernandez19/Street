@@ -1,12 +1,11 @@
 // src/pages/admin/CategoriasPage.jsx
 import React, { useState, useEffect, useMemo } from 'react';
-import AdminLayoutClean from './AdminLayoutClean';
 import Alert from '../../components/Alert';
 import SearchInput from '../../components/SearchInput';
 import UniversalModal from '../../components/UniversalModal';
 import ConfirmDeleteModal from '../../components/ConfirmDeleteModal';
 import { initialCategories } from '../../data';
-import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronRight, FaEye, FaEdit, FaTrash, FaBan } from 'react-icons/fa';
 
 const CategoriasPage = () => {
   // =============== ESTADOS ===============
@@ -19,28 +18,26 @@ const CategoriasPage = () => {
   const [deleteModalState, setDeleteModalState] = useState({ isOpen: false, category: null });
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
-  const [selectedImageIndex, setSelectedImageIndex] = useState(null);
-  const [selectedFile, setSelectedFile] = useState(null); // Estado para el archivo seleccionado
+  const [_selectedImageIndex, setSelectedImageIndex] = useState(null);
+  const [_imageUrl, setImageUrl] = useState('');
 
-  // =============== PAGINACIÓN CONSTANTES ===============
-  const ITEMS_PER_PAGE = 3; // 3 tarjetas por página
+  const ITEMS_PER_PAGE = 3;
 
-  // =============== IMÁGENES POR CATEGORÍA (IMPORTADAS DESDE DATA) ===============
   const imgPorCategoria = {
-    "NIKE 1.1": "https://res.cloudinary.com/dxc5qqsjd/image/upload/v1762950188/gorrarojaymorada9_sufoqt.jpg",
-    "A/N 1.1": "https://res.cloudinary.com/dxc5qqsjd/image/upload/v1762988183/negraconelescudo_zzh4l9.jpg",
-    "BEISBOLERA PREMIUM": "https://res.cloudinary.com/dxc5qqsjd/image/upload/v1762910786/gorraazulblancoLA_rembf2.jpg",
-    "DIAMANTE IMPORTADA": "https://res.cloudinary.com/dxc5qqsjd/image/upload/v1762914412/gorraconrosas_ko3326.jpg",
-    "EQUINAS-AGROPECUARIAS": "https://res.cloudinary.com/dxc5qqsjd/image/upload/v1762916288/gorraazulcerdoverde_e10kc7.jpg",
-    "EXCLUSIVA 1.1": "https://res.cloudinary.com/dxc5qqsjd/image/upload/v1762956762/gorranube_jrten0.jpg",
-    "MONASTERY 1.1": "https://res.cloudinary.com/dxc5qqsjd/image/upload/v1762957919/gorramonasterygris_ij6ksq.jpg",
-    "MULTIMARCA": "https://res.cloudinary.com/dxc5qqsjd/image/upload/v1762957956/gorrablancachromebeart_amqbro.jpg",
-    "PLANA CERRADA 1.1": "https://res.cloudinary.com/dxc5qqsjd/image/upload/v1762988576/gorranegrajordan_arghad.jpg",
-    "PLANA IMPORTADA": "https://res.cloudinary.com/dxc5qqsjd/image/upload/v1762995130/gorranegraAA_zkdg1e.jpg",
-    "PORTAGORRAS": "https://res.cloudinary.com/dxc5qqsjd/image/upload/v1762994460/portagorras-1sencillo_xxe5hf.jpg",
-    "PREMIUM": "https://res.cloudinary.com/dxc5qqsjd/image/upload/v1762987076/gorrahugoboss_ev6z54.jpg",
-    "camisetas": "https://res.cloudinary.com/dxc5qqsjd/image/upload/v1763002983/TALLA_M_3_youtflecha_hphfng.jpg",
-    "default": "https://images.unsplash.com/photo-1523413651479-597eb2da0ad6?auto=format&fit=crop&w=1000&q=80",
+    "NIKE 1.1": "https://res.cloudinary.com/dxc5qqsjd/image/upload/v1762950188/gorrarojaymorada9_sufoqt.jpg  ",
+    "A/N 1.1": "https://res.cloudinary.com/dxc5qqsjd/image/upload/v1762988183/negraconelescudo_zzh4l9.jpg  ",
+    "BEISBOLERA PREMIUM": "https://res.cloudinary.com/dxc5qqsjd/image/upload/v1762910786/gorraazulblancoLA_rembf2.jpg  ",
+    "DIAMANTE IMPORTADA": "https://res.cloudinary.com/dxc5qqsjd/image/upload/v1762914412/gorraconrosas_ko3326.jpg  ",
+    "EQUINAS-AGROPECUARIAS": "https://res.cloudinary.com/dxc5qqsjd/image/upload/v1762916288/gorraazulcerdoverde_e10kc7.jpg  ",
+    "EXCLUSIVA 1.1": "https://res.cloudinary.com/dxc5qqsjd/image/upload/v1762956762/gorranube_jrten0.jpg  ",
+    "MONASTERY 1.1": "https://res.cloudinary.com/dxc5qqsjd/image/upload/v1762957919/gorramonasterygris_ij6ksq.jpg  ",
+    "MULTIMARCA": "https://res.cloudinary.com/dxc5qqsjd/image/upload/v1762957956/gorrablancachromebeart_amqbro.jpg  ",
+    "PLANA CERRADA 1.1": "https://res.cloudinary.com/dxc5qqsjd/image/upload/v1762988576/gorranegrajordan_arghad.jpg  ",
+    "PLANA IMPORTADA": "https://res.cloudinary.com/dxc5qqsjd/image/upload/v1762995130/gorranegraAA_zkdg1e.jpg  ",
+    "PORTAGORRAS": "https://res.cloudinary.com/dxc5qqsjd/image/upload/v1762994460/portagorras-1sencillo_xxe5hf.jpg  ",
+    "PREMIUM": "https://res.cloudinary.com/dxc5qqsjd/image/upload/v1762987076/gorrahugoboss_ev6z54.jpg  ",
+    "camisetas": "https://res.cloudinary.com/dxc5qqsjd/image/upload/v1763002983/TALLA_M_3_youtflecha_hphfng.jpg  ",
+    "default": "https://images.unsplash.com/photo-1523413651479-597eb2da0ad6?auto=format&fit=crop&w=1000&q=80  ",
   };
 
   // =============== EFECTOS ===============
@@ -61,10 +58,12 @@ const CategoriasPage = () => {
     setAlert({ show: true, message: msg, type });
     setTimeout(() => setAlert({ show: false, message: '', type: 'success' }), 3000);
   };
+
   const clearSearch = () => { 
     setSearchTerm(''); 
     setCurrentPage(1); 
   };
+
   const handleFilterSelect = (status) => { 
     setFilterStatus(status); 
     setCurrentPage(1); 
@@ -86,7 +85,7 @@ const CategoriasPage = () => {
     });
   }, [categories, searchTerm, filterStatus]);
 
-  // =============== PAGINACIÓN CÁLCULOS ===============
+  // =============== PAGINACIÓN ===============
   const totalItems = filteredCategories.length;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
   const startItem = (currentPage - 1) * ITEMS_PER_PAGE + 1;
@@ -96,7 +95,6 @@ const CategoriasPage = () => {
     return filteredCategories.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredCategories, currentPage]);
 
-  // =============== MANEJO DE PÁGINAS ===============
   useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
       setCurrentPage(totalPages);
@@ -104,47 +102,46 @@ const CategoriasPage = () => {
       setCurrentPage(1);
     }
   }, [totalPages, currentPage]);
+
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setCurrentPage(newPage);
     }
   };
 
-  // =============== MANEJO DE MODAL ===============
+  // =============== MODALES ===============
   const openModal = (mode = 'create', category = null) => {
     setModalState({ isOpen: true, mode, category });
     setErrors({});
     setSelectedImageIndex(null);
-    setSelectedFile(null); // Resetear archivo al abrir modal
+    setImageUrl('');
     if (category && (mode === 'edit' || mode === 'view')) {
       setFormData({
         nombre: category.nombre || '',
         descripcion: category.descripcion || '',
+        imagenUrl: category.imagenUrl || '',
         estado: category.estado || 'Activo',
         isActive: category.isActive !== undefined ? category.isActive : true
       });
-      // Encontrar el índice de la imagen si existe en defaultImages
-      if (category.imagenUrl && defaultImages.includes(category.imagenUrl)) {
-        setSelectedImageIndex(defaultImages.indexOf(category.imagenUrl));
-      }
     } else if (mode === 'create') {
       setFormData({
         nombre: '',
         descripcion: '',
+        imagenUrl: '',
         estado: 'Activo',
         isActive: true
       });
     }
   };
+
   const closeModal = () => {
     setModalState({ isOpen: false, mode: 'view', category: null });
     setFormData({});
     setErrors({});
     setSelectedImageIndex(null);
-    setSelectedFile(null); // Limpiar archivo al cerrar
+    setImageUrl('');
   };
 
-  // =============== MANEJO DE ELIMINACIÓN ===============
   const openDeleteModal = (category) => {
     if (category.isActive) {
       showAlert('No se puede eliminar una categoría activa. Primero desactívela.', 'delete');
@@ -152,6 +149,7 @@ const CategoriasPage = () => {
     }
     setDeleteModalState({ isOpen: true, category });
   };
+
   const closeDeleteModal = () => {
     setDeleteModalState({ isOpen: false, category: null });
   };
@@ -164,33 +162,10 @@ const CategoriasPage = () => {
         return newErrors;
       });
     }
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // =============== SELECCIÓN DE ARCHIVO ===============
-  const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      // Validar que sea una imagen
-      if (!file.type.startsWith('image/')) {
-        showAlert('Por favor seleccione un archivo de imagen válido.', 'error');
-        return;
-      }
-      setSelectedFile(file);
-      // Opcional: mostrar vista previa si lo deseas
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        // Aquí podrías guardar la URL de la vista previa en el estado si lo necesitas
-        // setPreviewUrl(e.target.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // =============== RENDER FIELD OPTIMIZADO - AHORA MUESTRA LA IMAGEN EN VISTA =======
+  // =============== RENDER FIELD ===============
   const renderField = (label, fieldName, type = 'text', options = []) => {
     const category = modalState.category;
     const isError = errors[fieldName];
@@ -229,23 +204,15 @@ const CategoriasPage = () => {
     };
 
     if (modalState.mode === 'view') {
-      const fieldMap = {
-        nombre: 'nombre',
-        descripcion: 'descripcion',
-        estado: 'estado',
-        isActive: 'isActive'
-      };
+      const fieldMap = { nombre: 'nombre', descripcion: 'descripcion', estado: 'estado' };
       const actualFieldName = fieldMap[fieldName] || fieldName;
       let displayValue = category?.[actualFieldName] || 'N/A';
 
-      // ✅ MOSTRAR LA IMAGEN SI EL CAMPO ES "imagenUrl" O SI QUEREMOS MOSTRARLA EN VISTA
-      if (fieldName === 'imagenUrl' || fieldName === 'Importar Imagen (opcional)') {
+      if (fieldName === 'imagenUrl' || fieldName === 'URL de Imagen (opcional)') {
         const imageUrl = category?.imagenUrl || imgPorCategoria.default;
         return (
           <div>
-            <label style={labelStyle}>
-              {label}:
-            </label>
+            <label style={labelStyle}>{label}:</label>
             <div style={{ 
               width: '100%',
               height: '150px',
@@ -260,18 +227,9 @@ const CategoriasPage = () => {
               justifyContent: 'center',
               alignItems: 'center',
               overflow: 'hidden',
-              position: 'relative'
             }}>
               {!imageUrl && (
-                <span style={{
-                  color: '#F5C81B',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  textAlign: 'center',
-                  padding: '10px'
-                }}>
-                  Sin imagen
-                </span>
+                <span style={{ color: '#F5C81B', fontSize: '12px', fontWeight: '600' }}>Sin imagen</span>
               )}
             </div>
           </div>
@@ -280,9 +238,7 @@ const CategoriasPage = () => {
 
       return (
         <div>
-          <label style={labelStyle}>
-            {label}:
-          </label>
+          <label style={labelStyle}>{label}:</label>
           <div style={{ 
             backgroundColor: '#000000', 
             border: '1px solid #334155', 
@@ -301,17 +257,11 @@ const CategoriasPage = () => {
       );
     } else {
       const value = formData[fieldName] || '';
-      const isSelectField = ['estado'].includes(fieldName);
-      if (isSelectField) {
-        // Solo mostrar estado en modo edición, no en creación
-        if (modalState.mode === 'create') {
-          return null;
-        }
+      if (['estado'].includes(fieldName)) {
+        if (modalState.mode === 'create') return null;
         return (
           <div>
-            <label style={labelStyle}>
-              {label}: <span style={{ color: '#ef4444' }}>*</span>
-            </label>
+            <label style={labelStyle}>{label}: <span style={{ color: '#ef4444' }}>*</span></label>
             <select
               name={fieldName}
               value={value}
@@ -324,52 +274,37 @@ const CategoriasPage = () => {
               ))}
             </select>
             <div style={errorStyle}>
-              {isError && (
-                <>
-                  <span style={{ color: '#f87171', fontSize: '14px', fontWeight: 'bold' }}>●</span>
-                  {isError}
-                </>
-              )}
+              {isError && (<><span style={{ color: '#f87171', fontSize: '14px', fontWeight: 'bold' }}>●</span>{isError}</>)}
             </div>
           </div>
         );
       } else if (fieldName === 'descripcion') {
-        // Reducir tamaño de la descripción
         return (
           <div>
-            <label style={labelStyle}>
-              {label}: <span style={{ color: '#ef4444' }}>*</span>
-            </label>
+            <label style={labelStyle}>{label}: <span style={{ color: '#ef4444' }}>*</span></label>
             <textarea
               name={fieldName}
               value={value}
               onChange={(e) => handleInputChange(fieldName, e.target.value)}
-              rows={2} // Menos filas
+              rows={2}
               style={{
                 ...inputStyle,
                 height: 'auto',
-                minHeight: '40px', // Altura mínima reducida
+                minHeight: '40px',
                 resize: 'vertical',
                 lineHeight: '1.4',
-                padding: '4px 8px', // Padding reducido
+                padding: '4px 8px',
               }}
             />
             <div style={errorStyle}>
-              {isError && (
-                <>
-                  <span style={{ color: '#f87171', fontSize: '14px', fontWeight: 'bold' }}>●</span>
-                  {isError}
-                </>
-              )}
+              {isError && (<><span style={{ color: '#f87171', fontSize: '14px', fontWeight: 'bold' }}>●</span>{isError}</>)}
             </div>
           </div>
         );
       } else {
         return (
           <div>
-            <label style={labelStyle}>
-              {label}: <span style={{ color: '#ef4444' }}>*</span>
-            </label>
+            <label style={labelStyle}>{label}: <span style={{ color: '#ef4444' }}>*</span></label>
             <input
               name={fieldName}
               type={type}
@@ -378,12 +313,7 @@ const CategoriasPage = () => {
               style={inputStyle}
             />
             <div style={errorStyle}>
-              {isError && (
-                <>
-                  <span style={{ color: '#f87171', fontSize: '14px', fontWeight: 'bold' }}>●</span>
-                  {isError}
-                </>
-              )}
+              {isError && (<><span style={{ color: '#f87171', fontSize: '14px', fontWeight: 'bold' }}>●</span>{isError}</>)}
             </div>
           </div>
         );
@@ -391,12 +321,9 @@ const CategoriasPage = () => {
     }
   };
 
-  // =============== VALIDACIONES Y GUARDADO ===============
+  // =============== GUARDADO Y ELIMINACIÓN ===============
   const handleSave = () => {
-    const requiredFields = [
-      { name: 'nombre', label: 'Nombre' },
-      { name: 'descripcion', label: 'Descripción' },
-    ];
+    const requiredFields = [{ name: 'nombre', label: 'Nombre' }, { name: 'descripcion', label: 'Descripción' }];
     const newErrors = {};
     requiredFields.forEach(field => {
       const value = formData[field.name];
@@ -410,28 +337,20 @@ const CategoriasPage = () => {
       showAlert('Complete los campos obligatorios', 'validation');
       return;
     }
-    const { nombre, descripcion, estado } = formData;
-    // Simular la carga del archivo (en un caso real, aquí subirías el archivo a un servidor)
-    let imagenUrl = imgPorCategoria.default;
-    if (selectedFile) {
-      // En este ejemplo, solo usamos una URL predeterminada.
-      // En producción, usarías el servicio de Cloudinary o similar.
-      imagenUrl = URL.createObjectURL(selectedFile); // Para vista previa local
-      // Para producción, esto sería una URL de Cloudinary después de subir el archivo.
-    }
+
+    const { nombre, descripcion, estado, imagenUrl } = formData;
+    const finalImagenUrl = imagenUrl || imgPorCategoria.default;
+
     const updatedData = {
-      nombre: nombre,
-      descripcion: descripcion,
-      imagenUrl: imagenUrl, // Usar la URL generada o la predeterminada
+      nombre,
+      descripcion,
+      imagenUrl: finalImagenUrl,
       estado: modalState.mode === 'create' ? 'Activo' : estado,
       isActive: modalState.mode === 'create' ? true : estado === 'Activo',
     };
+
     if (modalState.mode === 'edit' && modalState.category?.id) {
-      setCategories(prev => prev.map(c => 
-        c.id === modalState.category.id 
-          ? { ...c, ...updatedData }
-          : c
-      ));
+      setCategories(prev => prev.map(c => c.id === modalState.category.id ? { ...c, ...updatedData } : c));
       showAlert(`Categoría "${updatedData.nombre}" actualizada correctamente`, 'edit');
     } else if (modalState.mode === 'create') {
       const newId = `cat-${Date.now()}`;
@@ -471,7 +390,7 @@ const CategoriasPage = () => {
     }
   };
 
-  // =============== COMPONENTE FILTRO ESTADO ===============
+  // =============== COMPONENTES ===============
   const StatusFilter = () => {
     const [open, setOpen] = useState(false);
     return (
@@ -495,14 +414,8 @@ const CategoriasPage = () => {
             fontWeight: '600', 
             height: '36px' 
           }} 
-          onMouseEnter={e => { 
-            e.target.style.backgroundColor = '#F5C81B'; 
-            e.target.style.color = '#000'; 
-          }} 
-          onMouseLeave={e => { 
-            e.target.style.backgroundColor = 'transparent'; 
-            e.target.style.color = '#F5C81B'; 
-          }}
+          onMouseEnter={e => { e.target.style.backgroundColor = '#F5C81B'; e.target.style.color = '#000'; }}
+          onMouseLeave={e => { e.target.style.backgroundColor = 'transparent'; e.target.style.color = '#F5C81B'; }}
         >
           <span>{filterStatus}</span>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
@@ -538,14 +451,8 @@ const CategoriasPage = () => {
                   cursor: 'pointer', 
                   fontWeight: filterStatus === status ? '600' : '400' 
                 }}
-                onMouseEnter={e => filterStatus !== status && (
-                  e.target.style.backgroundColor = '#F5C81B',
-                  e.target.style.color = '#000'
-                )}
-                onMouseLeave={e => filterStatus !== status && (
-                  e.target.style.backgroundColor = 'transparent',
-                  e.target.style.color = '#F5C81B'
-                )}
+                onMouseEnter={e => filterStatus !== status && (e.target.style.backgroundColor = '#F5C81B', e.target.style.color = '#000')}
+                onMouseLeave={e => filterStatus !== status && (e.target.style.backgroundColor = 'transparent', e.target.style.color = '#F5C81B')}
               >
                 {status}
               </button>
@@ -556,7 +463,6 @@ const CategoriasPage = () => {
     );
   };
 
-  // =============== RENDER CARD DE CATEGORÍA ===============
   const CategoryCard = ({ category }) => {
     const isActive = category.isActive;
     return (
@@ -574,34 +480,9 @@ const CategoriasPage = () => {
         overflow: 'hidden',
         border: '1px solid #222',
       }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = '#333';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = '#222';
-      }}
+      onMouseEnter={(e) => e.currentTarget.style.borderColor = '#333'}
+      onMouseLeave={(e) => e.currentTarget.style.borderColor = '#222'}
       >
-        {/* Estado */}
-        <div style={{ 
-          position: 'absolute', 
-          top: '12px', 
-          right: '12px',
-          zIndex: 10 
-        }}>
-          <span style={{
-            padding: "6px 10px",
-            fontSize: "11px",
-            fontWeight: "700",
-            borderRadius: "20px",
-            backgroundColor: isActive ? "#10B981" : "#EF4444",
-            color: "#000000",
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-          }}>
-            {isActive ? 'Activo' : 'Inactivo'}
-          </span>
-        </div>
-        {/* Imagen */}
         <div style={{
           width: '100%',
           height: '150px',
@@ -637,29 +518,36 @@ const CategoriasPage = () => {
             </div>
           )}
         </div>
-        {/* Contenido */}
-        <div style={{ 
-          flex: 1,
-          marginBottom: '16px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px',
-          minHeight: '0',
-          overflow: 'hidden'
-        }}>
-          <h3 style={{
-            color: '#F5C81B',
-            fontSize: '16px',
-            fontWeight: '700',
-            margin: '0',
-            lineHeight: '1.3',
-            minHeight: 'auto',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}>
-            {category.nombre}
-          </h3>
+        <div style={{ flex: 1, marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '8px', minHeight: '0', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <h3 style={{
+              color: '#F5C81B',
+              fontSize: '16px',
+              fontWeight: '700',
+              margin: '0',
+              lineHeight: '1.3',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              flex: '1 1 auto',
+              minWidth: '0',
+            }}>
+              {category.nombre}
+            </h3>
+            <span style={{
+              padding: "4px 8px",
+              fontSize: "10px",
+              fontWeight: "700",
+              borderRadius: "12px",
+              backgroundColor: isActive ? "#10B981" : "#EF4444",
+              color: "#000000",
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              flexShrink: '0',
+            }}>
+              {isActive ? 'Activo' : 'Inactivo'}
+            </span>
+          </div>
           <p style={{
             color: '#ffffff',
             fontSize: '13px',
@@ -676,110 +564,99 @@ const CategoriasPage = () => {
             {category.descripcion}
           </p>
         </div>
-        {/* Botones de acción */}
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px',
-          marginTop: 'auto'
-        }}>
-          <div style={{
-            display: 'flex',
-            gap: '6px',
-            justifyContent: 'space-between'
-          }}>
-            <button
-              onClick={() => openModal('view', category)}
-              style={{
-                flex: 1,
-                backgroundColor: 'transparent',
-                border: '1px solid #3b82f6',
-                color: '#3b82f6',
-                padding: '6px 4px',
-                borderRadius: '4px',
-                fontSize: '11px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: 'auto' }}>
+          <div style={{ display: 'flex', gap: '6px', justifyContent: 'space-between' }}>
+            <button 
+              onClick={() => openModal('view', category)} 
+              style={{ 
+                flex: 1, 
+                backgroundColor: 'transparent', 
+                border: '1px solid #3b82f6', 
+                color: '#3b82f6', 
+                padding: '6px 4px', 
+                borderRadius: '4px', 
+                fontSize: '14px', 
+                fontWeight: '600', 
+                cursor: 'pointer', 
+                height: '30px',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                gap: '4px',
-                height: '30px'
-              }}
-              onMouseEnter={(e) => {
+                justifyContent: 'center'
+              }} 
+              onMouseEnter={e => {
                 e.target.style.backgroundColor = '#3b82f6';
-                e.target.style.color = '#000000';
-              }}
-              onMouseLeave={(e) => {
+                e.target.style.color = '#000';
+              }} 
+              onMouseLeave={e => {
                 e.target.style.backgroundColor = 'transparent';
                 e.target.style.color = '#3b82f6';
               }}
+              title="Ver"
             >
-              Ver
+              <FaEye size={14} />
             </button>
-            <button
-              onClick={() => openModal('edit', category)}
-              style={{
-                flex: 1,
-                backgroundColor: 'transparent',
-                border: '1px solid #F5C81B',
-                color: '#F5C81B',
-                padding: '6px 4px',
-                borderRadius: '4px',
-                fontSize: '11px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
+            
+            <button 
+              onClick={() => openModal('edit', category)} 
+              style={{ 
+                flex: 1, 
+                backgroundColor: 'transparent', 
+                border: '1px solid #F5C81B', 
+                color: '#F5C81B', 
+                padding: '6px 4px', 
+                borderRadius: '4px', 
+                fontSize: '14px', 
+                fontWeight: '600', 
+                cursor: 'pointer', 
+                height: '30px',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                gap: '4px',
-                height: '30px'
-              }}
-              onMouseEnter={(e) => {
+                justifyContent: 'center'
+              }} 
+              onMouseEnter={e => {
                 e.target.style.backgroundColor = '#F5C81B';
-                e.target.style.color = '#000000';
-              }}
-              onMouseLeave={(e) => {
+                e.target.style.color = '#000';
+              }} 
+              onMouseLeave={e => {
                 e.target.style.backgroundColor = 'transparent';
                 e.target.style.color = '#F5C81B';
               }}
+              title="Editar"
             >
-              Editar
+              <FaEdit size={14} />
             </button>
-            <button
-              onClick={() => openDeleteModal(category)}
-              style={{
-                flex: 1,
-                backgroundColor: 'transparent',
-                border: '1px solid #ef4444',
-                color: '#ef4444',
-                padding: '6px 4px',
-                borderRadius: '4px',
-                fontSize: '11px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
+            
+            <button 
+              onClick={() => openDeleteModal(category)} 
+              style={{ 
+                flex: 1, 
+                backgroundColor: 'transparent', 
+                border: '1px solid #ef4444', 
+                color: '#ef4444', 
+                padding: '6px 4px', 
+                borderRadius: '4px', 
+                fontSize: '14px', 
+                fontWeight: '600', 
+                cursor: 'pointer', 
+                height: '30px',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                gap: '4px',
-                height: '30px'
-              }}
-              onMouseEnter={(e) => {
+                justifyContent: 'center'
+              }} 
+              onMouseEnter={e => {
                 e.target.style.backgroundColor = '#ef4444';
-                e.target.style.color = '#000000';
-              }}
-              onMouseLeave={(e) => {
+                e.target.style.color = '#000';
+              }} 
+              onMouseLeave={e => {
                 e.target.style.backgroundColor = 'transparent';
                 e.target.style.color = '#ef4444';
               }}
+              title="Eliminar"
             >
-              Eliminar
+              <FaTrash size={14} />
             </button>
           </div>
-          {/* Botón de toggle estado */}
+          
           <button
             onClick={() => handleToggleStatus(category.id)}
             style={{
@@ -789,15 +666,14 @@ const CategoriasPage = () => {
               color: isActive ? '#F5C81B' : '#000000',
               padding: '6px 4px',
               borderRadius: '4px',
-              fontSize: '11px',
+              fontSize: '14px',
               fontWeight: '600',
               cursor: 'pointer',
-              transition: 'all 0.2s ease',
+              height: '30px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '4px',
-              height: '30px'
+              gap: '6px'
             }}
             onMouseEnter={(e) => {
               if (isActive) {
@@ -821,15 +697,16 @@ const CategoriasPage = () => {
                 e.target.style.color = '#000000';
               }
             }}
+            title={isActive ? 'Desactivar' : 'Activar'}
           >
-            {isActive ? 'Desactivar' : 'Activar'}
+            <FaBan size={14} />
+            <span style={{ fontSize: '11px' }}>{isActive ? 'Desactivar' : 'Activar'}</span>
           </button>
         </div>
       </div>
     );
   };
 
-  // =============== PAGINATION COMPONENT ===============
   const Pagination = () => (
     <div style={{
       display: 'flex',
@@ -858,18 +735,8 @@ const CategoriasPage = () => {
             cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
             fontSize: '12px',
           }}
-          onMouseEnter={(e) => {
-            if (currentPage !== 1) {
-              e.target.style.backgroundColor = '#F5C81B';
-              e.target.style.color = '#000000';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (currentPage !== 1) {
-              e.target.style.backgroundColor = 'transparent';
-              e.target.style.color = '#F5C81B';
-            }
-          }}
+          onMouseEnter={(e) => currentPage !== 1 && (e.target.style.backgroundColor = '#F5C81B', e.target.style.color = '#000')}
+          onMouseLeave={(e) => currentPage !== 1 && (e.target.style.backgroundColor = 'transparent', e.target.style.color = '#F5C81B')}
         >
           <FaChevronLeft size={12} />
         </button>
@@ -888,18 +755,8 @@ const CategoriasPage = () => {
             cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
             fontSize: '12px',
           }}
-          onMouseEnter={(e) => {
-            if (currentPage !== totalPages) {
-              e.target.style.backgroundColor = '#F5C81B';
-              e.target.style.color = '#000000';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (currentPage !== totalPages) {
-              e.target.style.backgroundColor = 'transparent';
-              e.target.style.color = '#F5C81B';
-            }
-          }}
+          onMouseEnter={(e) => currentPage !== totalPages && (e.target.style.backgroundColor = '#F5C81B', e.target.style.color = '#000')}
+          onMouseLeave={(e) => currentPage !== totalPages && (e.target.style.backgroundColor = 'transparent', e.target.style.color = '#F5C81B')}
         >
           <FaChevronRight size={12} />
         </button>
@@ -907,158 +764,152 @@ const CategoriasPage = () => {
     </div>
   );
 
-  // =============== RENDER PRINCIPAL ===============
+  // =============== RENDER ===============
   return (
     <>
-      <AdminLayoutClean>
-        {alert.show && (
-          <Alert 
-            message={alert.message} 
-            type={alert.type} 
-            onClose={() => setAlert({ show: false, message: '', type: 'success' })} 
-          />
-        )}
-        {/* CONTENEDOR PRINCIPAL */}
+      {alert.show && (
+        <Alert 
+          message={alert.message} 
+          type={alert.type} 
+          onClose={() => setAlert({ show: false, message: '', type: 'success' })} 
+        />
+      )}
+
+      {/* CONTENEDOR PRINCIPAL */}
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        padding: '0',
+        backgroundColor: '#000000',
+        flex: 1,
+        overflow: 'hidden',
+      }}>
         <div style={{ 
-          display: 'flex', 
-          flexDirection: 'column',
-          padding: '0',
-          backgroundColor: '#000000',
-          flex: 1,
-          overflow: 'hidden',
+          padding: '0 0 10px 0',
+          flexShrink: 0,
+          marginBottom: '10px'
         }}>
-          {/* ENCABEZADO */}
           <div style={{ 
-            padding: '0 0 10px 0',
-            flexShrink: 0,
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
             marginBottom: '10px'
           }}>
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center', 
-              marginBottom: '10px'
-            }}>
-              <div style={{ padding: '0' }}>
-                <h1 style={{ color: '#F5C81B', fontSize: '20px', fontWeight: '700', margin: '0 0 2px 0', lineHeight: '1.2' }}>
-                  Gestión de Categorías
-                </h1>
-                <p style={{ color: '#9CA3AF', fontSize: '14px', margin: '0', lineHeight: '1.3' }}>
-                  Administra las categorías de productos
-                </p>
-              </div>
-              <button 
-                onClick={() => openModal('create')} 
-                style={{ 
-                  padding: '6px 12px', 
-                  backgroundColor: 'transparent', 
-                  border: '1px solid #F5C81B', 
-                  color: '#F5C81B', 
-                  borderRadius: '4px', 
-                  fontSize: '11px', 
-                  cursor: 'pointer', 
-                  whiteSpace: 'nowrap', 
-                  minWidth: '100px', 
-                  fontWeight: '600', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '3px', 
-                  height: '32px' 
-                }} 
-                onMouseEnter={e => { e.target.style.backgroundColor = '#F5C81B'; e.target.style.color = '#000000'; }}
-                onMouseLeave={e => { e.target.style.backgroundColor = 'transparent'; e.target.style.color = '#F5C81B'; }}
-              >
-                Registrar Categoría
-              </button>
+            <div style={{ padding: '0' }}>
+              <h1 style={{ color: '#F5C81B', fontSize: '20px', fontWeight: '700', margin: '0 0 2px 0', lineHeight: '1.2' }}>
+                Gestión de Categorías
+              </h1>
+              <p style={{ color: '#9CA3AF', fontSize: '14px', margin: '0', lineHeight: '1.3' }}>
+                Administra las categorías de productos
+              </p>
             </div>
-            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-              <SearchInput 
-                value={searchTerm} 
-                onChange={setSearchTerm} 
-                placeholder="Buscar por nombre o descripción..." 
-                onClear={clearSearch} 
-                fullWidth={true} 
-                style={{ height: '32px' }}
-              />
-              <StatusFilter />
-            </div>
+            <button 
+              onClick={() => openModal('create')} 
+              style={{ 
+                padding: '6px 12px', 
+                backgroundColor: 'transparent', 
+                border: '1px solid #F5C81B', 
+                color: '#F5C81B', 
+                borderRadius: '4px', 
+                fontSize: '11px', 
+                cursor: 'pointer', 
+                whiteSpace: 'nowrap', 
+                minWidth: '100px', 
+                fontWeight: '600', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '3px', 
+                height: '32px' 
+              }} 
+              onMouseEnter={e => { e.target.style.backgroundColor = '#F5C81B'; e.target.style.color = '#000'; }}
+              onMouseLeave={e => { e.target.style.backgroundColor = 'transparent'; e.target.style.color = '#F5C81B'; }}
+            >
+              Registrar Categoría
+            </button>
           </div>
-          {/* CONTENIDO PRINCIPAL */}
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            flex: 1,
-            backgroundColor: 'transparent',
-            overflow: 'hidden',
-          }}>
-            {/* GRID DE CATEGORÍAS - 3 TARJETAS POR PÁGINA */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: '12px',
-              paddingTop: '10px',
-              minHeight: '340px',
-            }}>
-              {paginatedCategories.length > 0 ? (
-                paginatedCategories.map(category => (
-                  <CategoryCard 
-                    key={category.id} 
-                    category={category} 
-                  />
-                ))
-              ) : (
-                <div style={{
-                  gridColumn: '1 / span 3',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#F5C81B',
-                  textAlign: 'center',
-                  padding: '40px 20px',
-                  height: '340px',
-                  backgroundColor: '#000000',
-                  borderRadius: '6px',
-                  border: '1px solid #222'
-                }}>
-                  <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#F5C81B" strokeWidth="1.5">
-                    <path d="M4 5h16v14H4V5z" />
-                    <path d="M9 3l3 3m3-3l-3 3" />
-                  </svg>
-                  <h3 style={{ color: '#F5C81B', margin: '16px 0 8px 0' }}>
-                    No se encontraron categorías
-                  </h3>
-                  <p style={{ color: '#9CA3AF', fontSize: '14px', margin: '0' }}>
-                    {searchTerm || filterStatus !== 'Todos' 
-                      ? 'Intenta ajustar los filtros de búsqueda' 
-                      : 'No hay categorías registradas'}
-                  </p>
-                </div>
-              )}
-              {paginatedCategories.length > 0 && paginatedCategories.length < 3 && 
-                Array.from({ length: 3 - paginatedCategories.length }).map((_, index) => (
-                  <div 
-                    key={`empty-${index}`}
-                    style={{
-                      backgroundColor: '#000000',
-                      borderRadius: '6px',
-                      border: '1px dashed #222',
-                      padding: '16px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      height: '340px',
-                      opacity: 0.3,
-                    }}
-                  />
-                ))
-              }
-            </div>
-            {/* PAGINACIÓN */}
-            {totalItems > 0 && <Pagination />}
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <SearchInput 
+              value={searchTerm} 
+              onChange={setSearchTerm} 
+              placeholder="Buscar por nombre o descripción..." 
+              onClear={clearSearch} 
+              fullWidth={true} 
+              style={{ height: '32px' }}
+            />
+            <StatusFilter />
           </div>
         </div>
-      </AdminLayoutClean>
-      {/* MODAL DE CATEGORÍAS - CON CAJONCITO DE ARCHIVO Y BOTONES FIJOS ABAJO */}
+
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          flex: 1,
+          backgroundColor: 'transparent',
+          overflow: 'hidden',
+        }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '12px',
+            paddingTop: '10px',
+            minHeight: '340px',
+          }}>
+            {paginatedCategories.length > 0 ? (
+              paginatedCategories.map(category => (
+                <CategoryCard key={category.id} category={category} />
+              ))
+            ) : (
+              <div style={{
+                gridColumn: '1 / span 3',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#F5C81B',
+                textAlign: 'center',
+                padding: '40px 20px',
+                height: '340px',
+                backgroundColor: '#000000',
+                borderRadius: '6px',
+                border: '1px solid #222'
+              }}>
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#F5C81B" strokeWidth="1.5">
+                  <path d="M4 5h16v14H4V5z" />
+                  <path d="M9 3l3 3m3-3l-3 3" />
+                </svg>
+                <h3 style={{ color: '#F5C81B', margin: '16px 0 8px 0' }}>
+                  No se encontraron categorías
+                </h3>
+                <p style={{ color: '#9CA3AF', fontSize: '14px', margin: '0' }}>
+                  {searchTerm || filterStatus !== 'Todos' 
+                    ? 'Intenta ajustar los filtros de búsqueda' 
+                    : 'No hay categorías registradas'}
+                </p>
+              </div>
+            )}
+            {paginatedCategories.length > 0 && paginatedCategories.length < 3 && 
+              Array.from({ length: 3 - paginatedCategories.length }).map((_, index) => (
+                <div 
+                  key={`empty-${index}`}
+                  style={{
+                    backgroundColor: '#000000',
+                    borderRadius: '6px',
+                    border: '1px dashed #222',
+                    padding: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    height: '340px',
+                    opacity: 0.3,
+                  }}
+                />
+              ))
+            }
+          </div>
+          {totalItems > 0 && <Pagination />}
+        </div>
+      </div>
+
+      {/* MODALES */}
       <UniversalModal
         isOpen={modalState.isOpen}
         onClose={closeModal}
@@ -1097,15 +948,10 @@ const CategoriasPage = () => {
           width: '100%',
           flex: 1,
           minHeight: 0,
-          paddingBottom: '80px' // Espacio para los botones fijos
+          paddingBottom: '80px'
         }}>
-          <div>
-            {renderField('Nombre', 'nombre', 'text')}
-          </div>
-          <div>
-            {renderField('Descripción', 'descripcion', 'textarea')}
-          </div>
-          {/* CAJONCITO PARA IMPORTAR ARCHIVO */}
+          <div>{renderField('Nombre', 'nombre', 'text')}</div>
+          <div>{renderField('Descripción', 'descripcion', 'textarea')}</div>
           <div>
             <label style={{
               fontSize: '12px',
@@ -1114,45 +960,46 @@ const CategoriasPage = () => {
               marginBottom: '2px',
               display: 'block'
             }}>
-              Importar Imagen (opcional):
+              URL de Imagen (opcional):
             </label>
-            <div style={{
-              backgroundColor: '#1e293b',
-              border: '1px solid #334155',
-              borderRadius: '6px',
-              padding: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              cursor: 'pointer',
-              overflow: 'hidden',
-              whiteSpace: 'nowrap',
-              textOverflow: 'ellipsis'
-            }}
-            onClick={() => document.getElementById('fileInput').click()}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F5C81B" strokeWidth="2">
-                <path d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              <span style={{
-                color: selectedFile ? '#F5C81B' : '#94a3b8',
-                fontSize: '13px',
-                fontWeight: selectedFile ? '600' : '400'
-              }}>
-                {selectedFile ? selectedFile.name : 'Haz clic para seleccionar un archivo...'}
-              </span>
-            </div>
             <input
-              id="fileInput"
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
+              type="text"
+              value={formData.imagenUrl || ''}
+              onChange={(e) => handleInputChange('imagenUrl', e.target.value)}
+              placeholder="https://ejemplo.com/imagen.jpg"
               style={{
-                display: 'none'
+                backgroundColor: '#1e293b',
+                border: '1px solid #334155',
+                borderRadius: '6px',
+                padding: '8px 12px',
+                color: '#f1f5f9',
+                fontSize: '13px',
+                width: '100%',
+                outline: 'none',
+                boxSizing: 'border-box',
               }}
             />
+            {formData.imagenUrl && (
+              <div style={{
+                marginTop: '8px',
+                width: '100%',
+                height: '100px',
+                backgroundColor: '#000000',
+                borderRadius: '6px',
+                backgroundImage: `url(${formData.imagenUrl})`,
+                backgroundSize: 'contain',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                border: '1px solid #334155',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                overflow: 'hidden',
+              }}>
+                <span style={{ color: '#94a3b8', fontSize: '11px' }}>Vista previa</span>
+              </div>
+            )}
           </div>
-          {/* Solo mostrar estado en modo edición, no en creación */}
           {modalState.mode === 'edit' && (
             <div>
               {renderField('Estado', 'estado', 'select', [
@@ -1162,7 +1009,6 @@ const CategoriasPage = () => {
             </div>
           )}
         </div>
-        {/* BOTONES FIJOS EN LA PARTE INFERIOR DEL MODAL */}
         <div style={{
           position: 'absolute',
           bottom: '20px',
@@ -1171,61 +1017,12 @@ const CategoriasPage = () => {
           gap: '12px',
           justifyContent: 'flex-end',
           padding: '12px 0',
-          borderRadius: '0 0 8px 8px'
         }}>
-          <button
-            onClick={closeModal}
-            style={{
-              backgroundColor: 'transparent',
-              border: '1px solid #F5C81B',
-              color: '#F5C81B',
-              padding: '8px 16px',
-              borderRadius: '6px',
-              fontSize: '13px',
-              fontWeight: '500',
-              cursor: 'pointer',
-              minWidth: '80px',
-              height: '36px',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#F5C81B';
-              e.target.style.color = '#000000';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = 'transparent';
-              e.target.style.color = '#F5C81B';
-            }}
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={handleSave}
-            style={{
-              backgroundColor: '#F5C81B',
-              border: 'none',
-              color: '#000000',
-              padding: '8px 16px',
-              borderRadius: '6px',
-              fontSize: '13px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              minWidth: '100px',
-              height: '36px',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#d4af37';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = '#F5C81B';
-            }}
-          >
-            {modalState.mode === 'create' ? 'Guardar' : 'Guardar Cambios'}
-          </button>
+          <button onClick={closeModal} style={{ backgroundColor:'transparent', border:'1px solid #F5C81B', color:'#F5C81B', padding:'8px 16px', borderRadius:'6px', fontSize:'13px', fontWeight:'500', cursor:'pointer', minWidth:'80px', height:'36px' }} onMouseEnter={e=>{e.target.style.backgroundColor='#F5C81B';e.target.style.color='#000'}} onMouseLeave={e=>{e.target.style.backgroundColor='transparent';e.target.style.color='#F5C81B'}}>Cancelar</button>
+          <button onClick={handleSave} style={{ backgroundColor:'#F5C81B', border:'none', color:'#000', padding:'8px 16px', borderRadius:'6px', fontSize:'13px', fontWeight:'600', cursor:'pointer', minWidth:'100px', height:'36px' }} onMouseEnter={e=>{e.target.style.backgroundColor='#d4af37'}} onMouseLeave={e=>{e.target.style.backgroundColor='#F5C81B'}}>{modalState.mode === 'create' ? 'Guardar' : 'Guardar Cambios'}</button>
         </div>
       </UniversalModal>
-      {/* MODAL DE CONFIRMACIÓN DE ELIMINACIÓN */}
+
       <ConfirmDeleteModal
         isOpen={deleteModalState.isOpen}
         onClose={closeDeleteModal}

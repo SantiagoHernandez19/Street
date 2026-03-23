@@ -1,259 +1,220 @@
 // src/App.jsx
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import React, { useState, useMemo, useEffect } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 
-// Componentes
-import Header from './components/Header';
-import Alert from './components/Alert';
-
-// Páginas públicas
-import Home from './pages/Home';
-import Ofertas from './pages/Ofertas';
-import Categorias from './pages/Categorias';
-import CategoriaDetalle from './pages/CategoriaDetalle';
-import Login from './pages/Login';
-import Cart from './pages/Cart';
-import Profile from './pages/Profile';
-import SearchResults from './pages/SearchResults';
+// ===== COMPONENTES PÚBLICOS =====
+import Header from "./components/Header";
+import Login from "./pages/Login";
+import Home from "./pages/Home";
 import Productos from "./pages/Productos";
+import Categorias from "./pages/Categorias";
+import Ofertas from "./pages/Ofertas";
+import Profile from "./pages/Profile";
+import Cart from "./pages/Cart";
+import SearchResults from "./pages/SearchResults";
 
-// Admin
-import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminCategorias from './pages/admin/Categorias';
-import ClientesPage from './pages/admin/ClientesPage';
-import ProveedoresPage from './pages/admin/ProveedoresPage';
-import ProductosPage from './pages/admin/Productos';
-import DevolucionesPage from './pages/admin/DevolucionesPage';
-import RolesPage from './pages/admin/RolesPage';
-import UsersPage from './pages/admin/UsersPage';
-import VentasPage from './pages/admin/VentasPage';
-import ComprasPage from './pages/admin/ComprasPage';
+// ===== COMPONENTES ADMIN =====
+import AdminLayoutClean from "./pages/admin/AdminLayoutClean";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminCategorias from "./pages/admin/Categorias";
+import ClientesPage from "./pages/admin/ClientesPage";
+import ProveedoresPage from "./pages/admin/ProveedoresPage";
+import ProductosPage from "./pages/admin/Productos";
+import DevolucionesPage from "./pages/admin/DevolucionesPage";
+import RolesPage from "./pages/admin/RolesPage";
+import UsersPage from "./pages/admin/UsersPage";
+import VentasPage from "./pages/admin/VentasPage";
+import ComprasPage from "./pages/admin/ComprasPage";
 
-// Context para el Alert global
-export const AlertContext = React.createContext();
-
-// Guards
-const AdminRoute = ({ children, user, isLoading }) => {
-  if (isLoading) return null;
-  if (!user) return <Navigate to="/login" replace />;
-  if (user.role !== 'admin') return <Navigate to="/" replace />;
-  return children;
-};
-
-const ProtectedRoute = ({ children, user, isLoading }) => {
-  if (isLoading) return null;
-  if (!user) return <Navigate to="/login" replace />;
+// ===== 🔐 PROTECTED ROUTE =====
+const ProtectedRoute = ({ user, children }) => {
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  const isAdmin = user.IdRol === 1 || user.userType === "admin";
+  
+  if (!isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+  
   return children;
 };
 
 const AppContent = () => {
   const location = useLocation();
-  const [user, setUser] = useState(null);
-  const [cartItems, setCartItems] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const [alert, setAlert] = useState({
-    show: false,
-    message: '',
-    type: 'success-center',
+  const navigate = useNavigate();
+  
+  // Estado del usuario con sessionStorage
+  const [user, setUser] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem("user");
+      return saved ? JSON.parse(saved) : null;
+    } catch { 
+      return null; 
+    }
+  });
+  
+  // Estado del carrito
+  const [cartItems, setCartItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem("cart");
+      return saved ? JSON.parse(saved) : [];
+    } catch { 
+      return []; 
+    }
   });
 
-  const showAlert = (message, type = 'success-center') => {
-    setAlert({ show: true, message, type });
-  };
-
-  const hideAlert = () => {
-    setAlert(prev => ({ ...prev, show: false }));
-  };
-
+  // 🟢 NUEVO: Detectar cuando el servidor se desconecta
   useEffect(() => {
-    const saved = localStorage.getItem('user');
-    if (saved) {
-      try {
-        setUser(JSON.parse(saved));
-      } catch {
-        localStorage.removeItem('user');
-      }
-    }
-    setIsLoading(false);
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT_ATTEMPTS = 3;
+    
+    const checkServerConnection = () => {
+      fetch('/api/ping', { 
+        method: 'HEAD',
+        cache: 'no-cache',
+        mode: 'no-cors' // Esto evita errores CORS
+      }).catch(() => {
+        reconnectAttempts++;
+        console.log(`🔄 Intento de reconexión ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}`);
+        
+        if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+          console.log('❌ Servidor desconectado - Cerrando sesión');
+          handleLogout(true); // true = cierre por servidor caído
+        }
+      });
+    };
+
+    // Verificar cada 5 segundos
+    const interval = setInterval(checkServerConnection, 5000);
+    
+    // Verificar también cuando la página recupera el foco
+    const handleFocus = () => {
+      reconnectAttempts = 0; // Resetear intentos al volver
+      checkServerConnection();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
-  // Load cart
-  useEffect(() => {
-    const storedCart = localStorage.getItem("cart");
-    if (storedCart) {
-      try {
-        setCartItems(JSON.parse(storedCart));
-      } catch {
-        localStorage.removeItem("cart");
-      }
-    }
-  }, []);
-
-  const handleLogin = (u) => {
-    setUser(u);
-    showAlert('¡Inicio de sesión exitoso!', 'success-center');
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    setUser(null);
-    showAlert('Sesión cerrada correctamente', 'success-center');
+  // FUNCIONES DEL CARRITO
+  const updateCart = (items) => {
+    setCartItems(items);
+    localStorage.setItem("cart", JSON.stringify(items));
   };
 
   const addToCart = (product) => {
-    setCartItems(prev => {
-      const exists = prev.find(i => i.id === product.id);
-      const updated = exists
-        ? prev.map(i =>
-            i.id === product.id
-              ? { ...i, quantity: i.quantity + 1 }
-              : i
-          )
-        : [...prev, { ...product, quantity: 1 }];
-      
-      localStorage.setItem("cart", JSON.stringify(updated));
-
-      showAlert(
-        `${product.nombre || 'Producto'} agregado al carrito`,
-        'add-record'
-      );
-
-      return updated;
-    });
+    const existing = cartItems.find((i) => i.id === product.id);
+    if (existing) {
+      updateCart(cartItems.map((i) =>
+        i.id === product.id ? { ...i, quantity: (i.quantity || 1) + 1 } : i
+      ));
+    } else {
+      updateCart([...cartItems, { ...product, quantity: 1 }]);
+    }
   };
 
-  const showHeader =
-    !['/login'].includes(location.pathname) &&
-    !location.pathname.startsWith('/admin');
+  // HANDLE LOGIN - Modificado para aceptar parámetro de servidor caído
+  const handleLogin = (userData) => {
+    if (!userData) return;
+    
+    sessionStorage.setItem("user", JSON.stringify(userData));
+    setUser(userData);
+    
+    const isAdmin = userData.IdRol === 1 || userData.userType === "admin";
+    
+    if (isAdmin) {
+      navigate("/admin/AdminDashboard", { replace: true });
+    } else {
+      navigate("/profile", { replace: true });
+    }
+  };
 
-  if (isLoading)
-    return (
-      <div style={{ padding: 40, textAlign: "center", color: "#fff" }}>
-        Cargando…
-      </div>
-    );
+  // HANDLE LOGOUT - Modificado para manejar cierre por servidor
+  const handleLogout = (serverDisconnected = false) => {
+    console.log(serverDisconnected ? '🔌 Servidor desconectado' : '🚪 Cerrando sesión');
+    
+    setUser(null);
+    sessionStorage.removeItem("user");
+    
+    if (serverDisconnected) {
+      // Mostrar mensaje al usuario
+      alert('El servidor se ha desconectado. Por favor, inicia sesión nuevamente.');
+    }
+    
+    navigate("/login", { replace: true });
+  };
+
+  const cartItemCount = useMemo(
+    () => cartItems.reduce((t, i) => t + (i.quantity || 1), 0),
+    [cartItems]
+  );
+
+  const showHeader = !location.pathname.startsWith("/admin") && location.pathname !== "/login";
 
   return (
-    <AlertContext.Provider value={{ showAlert, hideAlert }}>
-      
-      {/* HEADER */}
+    <>
       {showHeader && (
         <Header
           user={user}
-          onLoginClick={() => (window.location.href = '/login')}
-          onLogout={handleLogout}
-          cartItemCount={cartItems.reduce((a, b) => a + b.quantity, 0)}
+          onLoginClick={() => navigate("/login")}
+          onLogout={() => handleLogout()}
+          cartItemCount={cartItemCount}
           cartItems={cartItems}
-          updateCart={setCartItems}
+          updateCart={updateCart}
         />
       )}
+      
+      <Routes>
+        <Route path="/" element={<Home addToCart={addToCart} updateCart={updateCart} cartItems={cartItems} />} />
+        <Route path="/login" element={<Login onLogin={handleLogin} />} />
+        <Route path="/categorias" element={<Categorias />} />
+        <Route path="/ofertas" element={<Ofertas />} />
+        <Route path="/productos" element={<Productos addToCart={addToCart} updateCart={updateCart} cartItems={cartItems} />} />
+        <Route path="/profile" element={<Profile user={user} onLogout={() => handleLogout()} />} />
+        <Route path="/perfil" element={<Profile user={user} onLogout={() => handleLogout()} />} />
+        <Route path="/cart" element={<Cart cartItems={cartItems} updateCart={updateCart} user={user} onLogout={() => handleLogout()} />} />
+        <Route path="/search" element={<SearchResults addToCart={addToCart} updateCart={updateCart} cartItems={cartItems} />} />
 
-      {/* CONTENIDO PRINCIPAL */}
-      <main
-        style={{
-          width: "100%",
-          margin: 0,
-          minHeight: "calc(100vh - 64px)", // Resta la altura del header
-          background: "transparent",
-          position: "relative",
-        }}
-      >
-        <Routes>
-          {/* RUTAS PÚBLICAS */}
-          <Route path="/" element={<Home addToCart={addToCart} />} />
-          <Route path="/categorias" element={<Categorias />} />
-          <Route path="/login" element={<Login onLogin={handleLogin} />} />
+        {/* Rutas de admin protegidas */}
+        <Route path="/admin" element={
+          <ProtectedRoute user={user}>
+            <AdminLayoutClean />
+          </ProtectedRoute>
+        }>
+          <Route index element={<Navigate to="AdminDashboard" replace />} />
+          <Route path="AdminDashboard" element={<AdminDashboard user={user} />} />
+          <Route path="Categorias" element={<AdminCategorias />} />
+          <Route path="Productos" element={<ProductosPage />} />
+          <Route path="ProveedoresPage" element={<ProveedoresPage />} />
+          <Route path="ComprasPage" element={<ComprasPage />} />
+          <Route path="ClientesPage" element={<ClientesPage />} />
+          <Route path="VentasPage" element={<VentasPage />} />
+          <Route path="DevolucionesPage" element={<DevolucionesPage />} />
+          <Route path="UsersPage" element={<UsersPage />} />
+          <Route path="RolesPages" element={<RolesPage />} />
+        </Route>
 
-          {/* RUTAS DE PRODUCTOS (CATÁLOGO) */}
-          <Route path="/productos" element={<Productos />} />
-          <Route path="/destacados" element={<Productos destacados={true} />} />
-          <Route path="/mas-comprados" element={<Productos masComprados={true} />} />
-
-          {/* OFERTAS */}
-          <Route path="/ofertas" element={<Ofertas addToCart={addToCart} />} />
-
-          {/* CATEGORÍAS */}
-          <Route
-            path="/categoria/:nombreCategoria"
-            element={<CategoriaDetalle addToCart={addToCart} />}
-          />
-
-          {/* BÚSQUEDA */}
-          <Route path="/search" element={<SearchResults addToCart={addToCart} />} />
-
-          {/* CARRITO */}
-          <Route
-            path="/cart"
-            element={
-              <Cart
-                cartItems={cartItems}
-                updateCart={setCartItems}
-                user={user}
-              />
-            }
-          />
-
-          {/* PERFIL */}
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute user={user} isLoading={isLoading}>
-                <Profile user={user} />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* ADMIN */}
-          <Route
-            path="/admin/*"
-            element={
-              <AdminRoute user={user} isLoading={isLoading}>
-                <div style={{ background: "#0a0a0a", minHeight: "100vh" }}>
-                  <Routes>
-                    <Route index element={<AdminDashboard />} />
-                    <Route path="categories" element={<AdminCategorias />} />
-                    <Route path="products" element={<ProductosPage />} />
-                    <Route path="customers" element={<ClientesPage />} />
-                    <Route path="suppliers" element={<ProveedoresPage />} />
-                    <Route path="users" element={<UsersPage />} />
-                    <Route path="roles" element={<RolesPage />} />
-                    <Route path="sales" element={<VentasPage />} />
-                    <Route path="orders" element={<ComprasPage />} />
-                    <Route path="returns" element={<DevolucionesPage />} />
-                    <Route path="*" element={<Navigate to="/admin" replace />} />
-                  </Routes>
-                </div>
-              </AdminRoute>
-            }
-          />
-
-          {/* DEFAULT */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
-
-      {/* ALERT GLOBAL */}
-      {alert.show && (
-        <Alert
-          type={alert.type}
-          message={alert.message}
-          onClose={hideAlert}
-        />
-      )}
-
-    </AlertContext.Provider>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 };
 
-export const useAlert = () => {
-  const context = React.useContext(AlertContext);
-  if (!context) {
-    throw new Error('useAlert debe usarse dentro de AlertContext.Provider');
-  }
-  return context;
-};
-
+// ✅ APP PRINCIPAL CON ROUTER
 export default function App() {
   return (
     <Router>

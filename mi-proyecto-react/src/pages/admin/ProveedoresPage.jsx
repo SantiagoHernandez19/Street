@@ -1,6 +1,5 @@
 // src/pages/admin/ProveedoresPage.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import AdminLayoutClean from './AdminLayoutClean';
 import { initialSuppliers } from '../../data';
 import EntityTable from '../../components/EntityTable';
 import Alert from '../../components/Alert';
@@ -132,7 +131,7 @@ const RenderField = ({
               ))}
             </select>
             {fieldName === 'city' && loadingCities && (
-               <div style={{
+              <div style={{
                   position: 'absolute',
                   right: '6px',
                   top: '50%',
@@ -143,9 +142,8 @@ const RenderField = ({
                   border: '2px solid #F5C81B',
                   borderTopColor: 'transparent',
                   animation: 'spin 1s linear infinite',
-               }}
-               >
-               </div>
+              }}>
+              </div>
             )}
           </div>
           {isError && (
@@ -154,12 +152,6 @@ const RenderField = ({
               {isError}
             </div>
           )}
-          <style jsx global>{`
-            @keyframes spin {
-              0% { transform: translateY(-50%) rotate(0deg); }
-              100% { transform: translateY(-50%) rotate(360deg); }
-            }
-          `}</style>
         </div>
       );
     }
@@ -505,13 +497,12 @@ const ProveedoresPage = () => {
 
   // ====== FUNCIÓN MODIFICADA PARA EL TOGGLE ======
   const handleToggleStatus = (proveedor) => {
-    console.log('Toggle clicked for:', proveedor); // Para debug
+    console.log('Toggle clicked for:', proveedor);
     
     setProveedores(prev => prev.map(p => 
       p.id === proveedor.id ? { ...p, isActive: !p.isActive } : p
     ));
     
-    // Mostrar alerta con el estado correcto
     const nuevoEstado = !proveedor.isActive;
     showAlert(`Proveedor ${nuevoEstado ? 'activado' : 'desactivado'} correctamente`, 'success');
   };
@@ -1027,112 +1018,108 @@ const ProveedoresPage = () => {
   // ====== RENDERIZADO PRINCIPAL ======
   return (
     <>
-      <AdminLayoutClean>
-        {alert.show && (
-          <Alert
-            message={alert.message}
-            type={alert.type}
-            onClose={() => setAlert({ show: false, message: '', type: 'success' })}
-          />
-        )}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            padding: "4px 12px 0 12px",
-            flex: 1,
-          }}
-        >
-          {/* Encabezado */}
-          <div style={{ marginBottom: "8px" }}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "6px",
-              }}
-            >
-              <div>
-                <h1 style={{ color: "#fff", fontSize: "20px", fontWeight: "700", margin: 0, lineHeight: "1.2" }}>
-                  Proveedores
-                </h1>
-                <p style={{ color: "#9CA3AF", fontSize: "15px", margin: 0, lineHeight: "1.3" }}>
-                  Gestiona los proveedores registrados
-                </p>
-              </div>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <button
-                  onClick={() => openModal("create")}
-                  style={{
-                    padding: "6px 13px",
-                    backgroundColor: "transparent",
-                    border: "1px solid #F5C81B",
-                    color: "#F5C81B",
-                    borderRadius: "4px",
-                    fontSize: "11px",
-                    cursor: "pointer",
-                    whiteSpace: "nowrap",
-                    minWidth: "100px",
-                    fontWeight: "600",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "3px",
-                    height: "35px",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = "#F5C81B";
-                    e.target.style.color = "#000";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = "transparent";
-                    e.target.style.color = "#F5C81B";
-                  }}
-                >
-                  Registrar Proveedor
-                </button>
-              </div>
+      {alert.show && (
+        <Alert
+          message={alert.message}
+          type={alert.type}
+          onClose={() => setAlert({ show: false, message: '', type: 'success' })}
+        />
+      )}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          padding: "4px 12px 0 12px",
+          flex: 1,
+          height: "100%", // Añadido para ocupar toda la altura
+          overflow: "hidden", // Evita scroll en el contenedor principal
+        }}
+      >
+        {/* Encabezado - fijo */}
+        <div style={{ 
+          marginBottom: "8px",
+          flexShrink: 0 
+        }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "6px",
+            }}
+          >
+            <div>
+              <h1 style={{ color: "#fff", fontSize: "20px", fontWeight: "700", margin: 0, lineHeight: "1.2" }}>
+                Proveedores
+              </h1>
+              <p style={{ color: "#9CA3AF", fontSize: "15px", margin: 0, lineHeight: "1.3" }}>
+                Gestiona los proveedores registrados
+              </p>
             </div>
-            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-              <div style={{ flex: 1 }}>
-                <SearchInput
-                  value={searchTerm}
-                  onChange={setSearchTerm}
-                  placeholder="Buscar por empresa, NIT, correo o teléfono..."
-                  onClear={clearSearch}
-                  fullWidth={true}
-                />
-              </div>
-              <StatusFilter />
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button
+                onClick={() => openModal("create")}
+                style={{
+                  padding: "6px 13px",
+                  backgroundColor: "transparent",
+                  border: "1px solid #F5C81B",
+                  color: "#F5C81B",
+                  borderRadius: "4px",
+                  fontSize: "11px",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  minWidth: "100px",
+                  fontWeight: "600",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "3px",
+                  height: "35px",
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = "#F5C81B";
+                  e.target.style.color = "#000";
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = "transparent";
+                  e.target.style.color = "#F5C81B";
+                }}
+              >
+                Registrar Proveedor
+              </button>
             </div>
           </div>
-          {/* Tabla + Paginación */}
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <div style={{ flex: 1 }}>
+              <SearchInput
+                value={searchTerm}
+                onChange={setSearchTerm}
+                placeholder="Buscar por empresa, NIT, correo o teléfono..."
+                onClear={clearSearch}
+                fullWidth={true}
+              />
+            </div>
+            <StatusFilter />
+          </div>
+        </div>
+
+        {/* Contenedor de tabla con altura fija */}
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          borderRadius: '6px',
+          border: '1px solid #F5C81B',
+          overflow: 'hidden',
+          backgroundColor: '#000',
+          minHeight: 0, // Importante para flexbox
+        }}>
+          {/* Tabla con scroll */}
           <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            borderRadius: '6px',
             flex: 1,
-            border: '1px solid #F5C81B',
-            overflow: 'hidden',
+            overflow: 'auto',
+            minHeight: 0,
           }}>
-            <div style={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
-            }}>
-              <div style={{
-                flex: 1,
-                width: '100%',
-                overflow: 'hidden',
-              }}>
-                <div style={{
-                  position: 'relative',
-                  width: '100%',
-                  height: '100%',
-                  overflow: 'auto',
-                }}>
-               <EntityTable
+            <EntityTable
               entities={paginated}
               columns={columns}
               onView={(proveedor) => openModal("view", proveedor)}
@@ -1141,156 +1128,158 @@ const ProveedoresPage = () => {
               onAnular={(proveedor) => handleToggleStatus(proveedor)}
               onReactivar={(proveedor) => handleToggleStatus(proveedor)}
               idField="id"
-              estadoField="isActive"  // CAMBIA ESTO - usa estadoField en lugar de isActiveField
+              estadoField="isActive"
               moduleType="generic"
               switchProps={{
                 activeColor: "#10b981",
                 inactiveColor: "#ef4444"
               }}
             />
-                </div>
-              </div>
-              <div style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "8px 12px",
-                backgroundColor: "#151822",
-                borderTop: '1px solid #F5C81B',
-                fontSize: "12px",
-                color: "#e0e0e0",
-                height: "48px",
-                boxSizing: "border-box",
+          </div>
+
+          {/* Paginación - siempre al final */}
+          <div style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "8px 12px",
+            backgroundColor: "#151822",
+            borderTop: '1px solid #F5C81B',
+            fontSize: "12px",
+            color: "#e0e0e0",
+            height: "48px",
+            boxSizing: "border-box",
+            flexShrink: 0,
+          }}>
+            <span>
+              Mostrando {showingStart}–{endIndex} de {filtered.length} proveedores
+            </span>
+            <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+              <button
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid #F5C81B',
+                  color: currentPage === 1 ? '#6B7280' : '#F5C81B',
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                  fontWeight: '600',
+                  minWidth: '90px',
+                }}
+                onMouseEnter={(e) => {
+                  if (currentPage > 1) {
+                    e.currentTarget.style.backgroundColor = '#F5C81B';
+                    e.currentTarget.style.color = '#000';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (currentPage > 1) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = '#F5C81B';
+                  }
+                }}
+              >
+                ‹ Anterior
+              </button>
+              <span style={{
+                padding: '6px 12px',
+                fontSize: '12px',
+                fontWeight: '600',
+                color: '#F5C81B',
+                minWidth: '60px',
+                textAlign: 'center'
               }}>
-                <span>
-                  Mostrando {showingStart}–{endIndex} de {filtered.length} proveedores
-                </span>
-                <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-                  <button
-                    onClick={() => setCurrentPage(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    style={{
-                      background: 'transparent',
-                      border: '1px solid #F5C81B',
-                      color: currentPage === 1 ? '#6B7280' : '#F5C81B',
-                      padding: '6px 12px',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-                      fontWeight: '600',
-                      minWidth: '90px',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (currentPage > 1) {
-                        e.currentTarget.style.backgroundColor = '#F5C81B';
-                        e.currentTarget.style.color = '#000';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (currentPage > 1) {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.color = '#F5C81B';
-                      }
-                    }}
-                  >
-                    ‹ Anterior
-                  </button>
-                  <span style={{
-                    padding: '6px 12px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    color: '#F5C81B',
-                    minWidth: '60px',
-                    textAlign: 'center'
-                  }}>
-                    Página {currentPage} de {totalPages}
-                  </span>
-                  <button
-                    onClick={() => setCurrentPage(currentPage + 1)}
-                    disabled={currentPage >= totalPages}
-                    style={{
-                      background: 'transparent',
-                      border: '1px solid #F5C81B',
-                      color: currentPage >= totalPages ? '#6B7280' : '#F5C81B',
-                      padding: '6px 12px',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
-                      fontWeight: '600',
-                      minWidth: '90px',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (currentPage < totalPages) {
-                        e.currentTarget.style.backgroundColor = '#F5C81B';
-                        e.currentTarget.style.color = '#000';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (currentPage < totalPages) {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.color = '#F5C81B';
-                      }
-                    }}
-                  >
-                    Siguiente ›
-                  </button>
-                </div>
-              </div>
+                Página {currentPage} de {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage >= totalPages}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid #F5C81B',
+                  color: currentPage >= totalPages ? '#6B7280' : '#F5C81B',
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
+                  fontWeight: '600',
+                  minWidth: '90px',
+                }}
+                onMouseEnter={(e) => {
+                  if (currentPage < totalPages) {
+                    e.currentTarget.style.backgroundColor = '#F5C81B';
+                    e.currentTarget.style.color = '#000';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (currentPage < totalPages) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = '#F5C81B';
+                  }
+                }}
+              >
+                Siguiente ›
+              </button>
             </div>
           </div>
         </div>
-        {/* MODAL PRINCIPAL (MÁS ESTRECHO) */}
-        <UniversalModal
-          isOpen={modalState.isOpen}
-          onClose={closeModal}
-          title={
-            modalState.mode === 'create'
-              ? 'Registrar Proveedor'
-              : modalState.mode === 'edit'
-              ? 'Editar Proveedor'
-              : 'Detalles del Proveedor'
+      </div>
+
+      {/* MODAL PRINCIPAL (MÁS ESTRECHO) */}
+      <UniversalModal
+        isOpen={modalState.isOpen}
+        onClose={closeModal}
+        title={
+          modalState.mode === 'create'
+            ? 'Registrar Proveedor'
+            : modalState.mode === 'edit'
+            ? 'Editar Proveedor'
+            : 'Detalles del Proveedor'
+        }
+        subtitle={
+          modalState.mode === 'create'
+            ? 'Complete la información para registrar un nuevo proveedor'
+            : modalState.mode === 'edit'
+            ? 'Modifique la información del proveedor'
+            : 'Información detallada del proveedor'
+        }
+        subtitleStyle={{ 
+          fontSize: "11px", 
+          color: "#9CA3AF",
+          whiteSpace: "nowrap",     
+          overflow: "hidden",        
+          textOverflow: "ellipsis",  
+          paddingRight: "10px",     
+          marginBottom: "8px",
+        }}
+        showActions={false}
+        customStyles={{
+          content: { 
+            padding: '14px 16px',
+            backgroundColor: '#000000',
+            border: '1px solid rgba(255,215,0,0.25)',
+            borderRadius: '12px',
+            maxWidth: '360px',
+            width: '100%',
+            maxHeight: 'calc(100vh - 40px)',
+            overflowY: 'auto',
           }
-          subtitle={
-            modalState.mode === 'create'
-              ? 'Complete la información para registrar un nuevo proveedor'
-              : modalState.mode === 'edit'
-              ? 'Modifique la información del proveedor'
-              : 'Información detallada del proveedor'
-          }
-          subtitleStyle={{ 
-            fontSize: "11px", 
-            color: "#9CA3AF",
-            whiteSpace: "nowrap",     
-            overflow: "hidden",        
-            textOverflow: "ellipsis",  
-            paddingRight: "10px",     
-            marginBottom: "8px",
-          }}
-          showActions={false}
-          customStyles={{
-            content: { 
-              padding: '14px 16px',
-              backgroundColor: '#000000',
-              border: '1px solid rgba(255,215,0,0.25)',
-              borderRadius: '12px',
-              maxWidth: '360px',
-              width: '100%',
-              maxHeight: 'calc(100vh - 40px)',
-              overflowY: 'auto',
-            }
-          }}
-        >
-          <ProveedorFormFields />
-        </UniversalModal>
-        {/* USAR COMPONENTE ConfirmDeleteModal EXISTENTE */}
-        <ConfirmDeleteModal
-          isOpen={deleteModal.isOpen}
-          onClose={closeDeleteModal}
-          onConfirm={handleDelete}
-          entityName={deleteModal.entityName}
-          entityType="proveedor"
-        />
-      </AdminLayoutClean>
+        }}
+      >
+        <ProveedorFormFields />
+      </UniversalModal>
+      
+      {/* USAR COMPONENTE ConfirmDeleteModal EXISTENTE */}
+      <ConfirmDeleteModal
+        isOpen={deleteModal.isOpen}
+        onClose={closeDeleteModal}
+        onConfirm={handleDelete}
+        entityName={deleteModal.entityName}
+        entityType="proveedor"
+      />
     </>
   );
 };

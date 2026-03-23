@@ -1,6 +1,5 @@
 // src/pages/admin/UsersPage.jsx
 import React, { useState, useMemo, useEffect } from "react";
-import AdminLayoutClean from "./AdminLayoutClean";
 
 // Componentes
 import SearchInput from "../../components/SearchInput";
@@ -11,6 +10,57 @@ import UniversalModal from "../../components/UniversalModal";
 
 // Datos
 import { initialUsers as usersData, initialRoles } from "../../data";
+
+// =============================================
+// COMPONENTE StatusFilter
+// =============================================
+const StatusFilter = ({ filterStatus, onFilterSelect }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ position: 'relative' }}>
+      <button 
+        onClick={() => setOpen(!open)} 
+        style={{ 
+          display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', 
+          backgroundColor: 'transparent', border: '1px solid #F5C81B', color: '#F5C81B', 
+          borderRadius: '6px', fontSize: '13px', cursor: 'pointer', minWidth: '110px', 
+          justifyContent: 'space-between', fontWeight: '600', height: '36px' 
+        }} 
+      >
+        <span>{filterStatus}</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
+          <polyline points="6,9 12,15 18,9"/>
+        </svg>
+      </button>
+      {open && (
+        <div style={{ 
+          position: 'absolute', top: '100%', right: 0, marginTop: '4px', backgroundColor: '#1F2937', 
+          border: '1px solid #F5C81B', borderRadius: '6px', padding: '6px 0', minWidth: '120px', zIndex: 1000 
+        }}>
+          {['Todos', 'Activos', 'Inactivos'].map(status => (
+            <button 
+              key={status} 
+              onClick={() => { onFilterSelect(status); setOpen(false); }} 
+              style={{ width: '100%', padding: '6px 12px', backgroundColor: 'transparent', border: 'none', color: '#F5C81B', fontSize: '13px', textAlign: 'left', cursor: 'pointer' }}
+            >
+              {status}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const FormField = React.memo(function FormField({ label, required, children, error }) {
+  return (
+    <div>
+      <label style={{ fontSize: '12px', color: '#e2e8f0', display: 'block', marginBottom: '2px' }}>{label}: {required && <span style={{color: '#ef4444'}}>*</span>}</label>
+      {children}
+      {error && <div style={{ color: '#f87171', fontSize: '11px' }}>{error}</div>}
+    </div>
+  );
+});
 
 const UsersPage = () => {
   // ─── Estados
@@ -25,26 +75,38 @@ const UsersPage = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [filterStatus, setFilterStatus] = useState('Todos');
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(7);
+  const itemsPerPage = 7;
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
 
-  // ─── Inicializar datos
+  // ─── Inicializar datos - SOLO UN ADMINISTRADOR CORREGIDO
   useEffect(() => {
-    const mapped = usersData.map((u) => {
+    const mapped = usersData.map((u, index) => {
       const role = initialRoles.find((r) => r.IdRol === u.IdRol);
       const [nombre, ...apellidos] = u.Nombre.trim().split(/\s+/);
       const apellido = apellidos.join(" ") || "";
+      
+      // CORRECCIÓN: Solo el primer usuario será administrador
+      // Si otros usuarios en initialRoles tienen rol "Administrador", se cambian a "Usuario"
+      let rol;
+      if (index === 0) {
+        // Primer usuario siempre será administrador
+        rol = "Administrador";
+      } else {
+        // Para otros usuarios, si su rol es "Administrador", lo cambiamos a "Usuario"
+        const roleName = role?.Nombre || "Usuario";
+        rol = roleName === "Administrador" ? "Usuario" : roleName;
+      }
+      
       return {
         id: u.IdUsuario,
         nombre,
         apellido,
         email: u.Correo || "",
-        rol: role?.Nombre || "Sin rol",
+        rol,
         isActive: u.Estado,
         tipoDocumento: u.TipoDocumento || 'CC',
         numeroDocumento: u.NumeroDocumento || '',
-        estado: u.Estado ? "Activo" : "Inactivo" // Agregar campo estado para EntityTable
       };
     });
     setUsers(mapped);
@@ -153,11 +215,19 @@ const UsersPage = () => {
       tipoDocumento: formData.tipoDocumento || 'CC',
       numeroDocumento: formData.numeroDocumento || '',
       rol: formData.rol,
-      isActive: Boolean(formData.isActive),
-      estado: formData.isActive ? "Activo" : "Inactivo" // Agregar campo estado
+      isActive: Boolean(formData.isActive)
     };
 
     if (editingUser?.id) {
+      // CORRECCIÓN: No permitir cambiar el rol a Administrador si ya hay uno
+      if (updatedData.rol === "Administrador") {
+        const existingAdmin = users.find(u => u.rol === "Administrador" && u.id !== editingUser.id);
+        if (existingAdmin) {
+          showAlert('Ya existe un usuario Administrador en el sistema', 'error');
+          return;
+        }
+      }
+      
       setUsers(prev => prev.map(u => 
         u.id === editingUser.id 
           ? { ...u, ...updatedData }
@@ -165,6 +235,15 @@ const UsersPage = () => {
       ));
       showAlert(`Usuario "${updatedData.nombre}" actualizado correctamente`, 'edit');
     } else {
+      // CORRECCIÓN: No permitir crear nuevos administradores
+      if (updatedData.rol === "Administrador") {
+        const existingAdmin = users.find(u => u.rol === "Administrador");
+        if (existingAdmin) {
+          showAlert('Ya existe un usuario Administrador en el sistema', 'error');
+          return;
+        }
+      }
+      
       const newId = users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1;
       setUsers(prev => [...prev, { ...updatedData, id: newId }]);
       showAlert(`Usuario "${updatedData.nombre}" creado correctamente`, 'add');
@@ -173,15 +252,13 @@ const UsersPage = () => {
     closeModal();
   };
 
-  // ─── Eliminar - No permitir eliminar usuarios activos
+  // ─── Eliminar
   const handleDeleteClick = (user) => {
-    // Si el usuario es administrador, no permitir eliminar
     if (isAdministrador(user)) {
       showAlert('El usuario "Administrador" no se puede eliminar', "error");
       return;
     }
     
-    // Si el usuario está activo, no permitir eliminar
     if (user.isActive) {
       showAlert('No se puede eliminar un usuario activo. Debe desactivarlo primero.', 'delete');
       return;
@@ -198,9 +275,8 @@ const UsersPage = () => {
     showAlert("Usuario eliminado correctamente");
   };
 
-  // ─── Toggle de estado - FUNCIÓN PARA EL SWITCH
+  // ─── Toggle de estado
   const handleToggleStatus = (user) => {
-    // Si el usuario es administrador, no permitir cambiar estado
     if (isAdministrador(user)) {
       showAlert('El usuario "Administrador" siempre está activo', "error");
       return;
@@ -213,8 +289,7 @@ const UsersPage = () => {
         u.id === user.id 
           ? { 
               ...u, 
-              isActive: newStatus,
-              estado: newStatus ? "Activo" : "Inactivo" // Actualizar campo estado
+              isActive: newStatus
             } 
           : u
       )
@@ -233,10 +308,7 @@ const UsersPage = () => {
   };
 
   // ─── Utilidades de búsqueda y filtrado
-  const clearSearch = () => { 
-    setSearchTerm(''); 
-    setCurrentPage(1); 
-  };
+  // ELIMINADO: const clearSearch = () => { ... } - no se usa
 
   const handleFilterSelect = (status) => { 
     setFilterStatus(status); 
@@ -270,97 +342,12 @@ const UsersPage = () => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, filteredUsers.length);
   const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
-  const showingStart = filteredUsers.length > 0 ? startIndex + 1 : 0;
+  // ELIMINADO: const showingStart = filteredUsers.length > 0 ? startIndex + 1 : 0;
 
   useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) setCurrentPage(totalPages);
     else if (totalPages === 0) setCurrentPage(1);
   }, [totalPages, currentPage]);
-
-  // ─── Componente Filtro de Estado
-  const StatusFilter = () => {
-    const [open, setOpen] = useState(false);
-    return (
-      <div style={{ position: 'relative' }}>
-        <button 
-          onClick={() => setOpen(!open)} 
-          style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '6px', 
-            padding: '8px 12px', 
-            backgroundColor: 'transparent', 
-            border: '1px solid #F5C81B', 
-            color: '#F5C81B', 
-            borderRadius: '6px', 
-            fontSize: '13px', 
-            cursor: 'pointer', 
-            whiteSpace: 'nowrap', 
-            minWidth: '110px', 
-            justifyContent: 'space-between', 
-            fontWeight: '600', 
-            height: '36px' 
-          }} 
-          onMouseEnter={e => { 
-            e.target.style.backgroundColor = '#F5C81B'; 
-            e.target.style.color = '#000'; 
-          }} 
-          onMouseLeave={e => { 
-            e.target.style.backgroundColor = 'transparent'; 
-            e.target.style.color = '#F5C81B'; 
-          }}
-        >
-          <span>{filterStatus}</span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
-            <polyline points="6,9 12,15 18,9"/>
-          </svg>
-        </button>
-        {open && (
-          <div style={{ 
-            position: 'absolute', 
-            top: '100%', 
-            right: 0, 
-            marginTop: '4px', 
-            backgroundColor: '#1F2937', 
-            border: '1px solid #F5C81B', 
-            borderRadius: '6px', 
-            padding: '6px 0', 
-            minWidth: '120px', 
-            zIndex: 1000, 
-            boxShadow: '0 4px 12px rgba(245, 200, 27, 0.3)' 
-          }}>
-            {['Todos', 'Activos', 'Inactivos'].map(status => (
-              <button 
-                key={status} 
-                onClick={() => { handleFilterSelect(status); setOpen(false); }} 
-                style={{ 
-                  width: '100%', 
-                  padding: '6px 12px', 
-                  backgroundColor: filterStatus === status ? '#F5C81B' : 'transparent', 
-                  border: 'none', 
-                  color: filterStatus === status ? '#000' : '#F5C81B', 
-                  fontSize: '13px', 
-                  textAlign: 'left', 
-                  cursor: 'pointer', 
-                  fontWeight: filterStatus === status ? '600' : '400' 
-                }}
-                onMouseEnter={e => filterStatus !== status && (
-                  e.target.style.backgroundColor = '#F5C81B',
-                  e.target.style.color = '#000'
-                )}
-                onMouseLeave={e => filterStatus !== status && (
-                  e.target.style.backgroundColor = 'transparent',
-                  e.target.style.color = '#F5C81B'
-                )}
-              >
-                {status}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  };
 
   // ─── Render Field para el Modal
   const renderField = (label, fieldName, type = 'text', options = []) => {
@@ -408,7 +395,18 @@ const UsersPage = () => {
     if (isSelectField) {
       let fieldOptions = options;
       if (fieldName === 'rol') {
-        fieldOptions = initialRoles.filter(r => r.Estado).map(r => ({ value: r.Nombre, label: r.Nombre }));
+        // CORRECCIÓN: Verificar si ya existe un administrador para mostrar/ocultar la opción
+        const existingAdmin = users.find(u => u.rol === "Administrador");
+        fieldOptions = [
+          { value: 'Usuario', label: 'Usuario' },
+          { value: 'Vendedor', label: 'Vendedor' },
+          { value: 'Supervisor', label: 'Supervisor' }
+        ];
+        
+        // Solo mostrar opción Administrador si no existe ya uno
+        if (!existingAdmin || (editingUser && editingUser.rol === "Administrador")) {
+          fieldOptions.unshift({ value: 'Administrador', label: 'Administrador' });
+        }
       }
 
       return (
@@ -463,231 +461,228 @@ const UsersPage = () => {
     }
   };
 
-  // ─── Columnas optimizadas
-  const userColumns = [
+  // ─── Columnas INCLUYENDO ESTADO con mejor espaciado y header alineado
+  const columns = [
     { 
-      header: "Nombre", 
-      field: "nombreCompleto",
-      width: '180px',
-      render: (u) => (
-        <span style={{ 
-          color: u.isActive ? '#fff' : '#9CA3AF',
-          fontSize: '13px', 
-          fontWeight: '600',
-          display: 'block',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis'
-        }}>
-          {u.nombre} {u.apellido}
+      header: 'Nombre', 
+      field: 'nombreCompleto',
+      width: '200px',
+      render: (item) => (
+        <span style={{ color: '#fff', fontSize: '13px', fontWeight: '600' }}>
+          {item.nombre} {item.apellido}
         </span>
-      )
+      ) 
     },
     { 
-      header: "Email",
-      field: "email",
-      width: '260px',
-      render: (u) => (
+      header: 'Email', 
+      field: 'email',
+      width: '250px',
+      render: (item) => (
+        <span style={{ color: '#fff', fontSize: '13px' }}>{item.email}</span>
+      ) 
+    },
+    { 
+      header: 'Rol', 
+      field: 'rol',
+      width: '150px',
+      render: (item) => (
         <span style={{ 
-          color: u.isActive ? '#fff' : '#9CA3AF',
+          color: item.rol === 'Administrador' ? '#F5C81B' : '#fff', 
           fontSize: '13px',
-          fontWeight: '400',
-          display: 'block',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis'
+          fontWeight: item.rol === 'Administrador' ? '600' : '400'
         }}>
-          {u.email}
+          {item.rol}
         </span>
-      )
+      ) 
     },
     { 
-      header: "Rol", 
-      field: "rol",
-      width: '180px',
-      render: (u) => (
-        <span style={{ 
-          color: u.isActive ? '#fff' : '#9CA3AF',
-          fontSize: '13px', 
-          fontWeight: '500',
-          display: 'block',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis'
-        }}>
-          {u.rol}
-        </span>
-      )
-    },
-    { 
-      header: "Estado", 
-      field: "estado",
+      header: 'Estado', 
+      field: 'estado',
       width: '100px',
-      render: (u) => (
-        <span style={{ 
-          color: u.isActive ? '#10b981' : '#ef4444',
-          fontSize: '13px', 
+      headerStyle: {
+        textAlign: 'center',
+        padding: '6px 2px',
+      },
+      render: (item) => (
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '4px',
+          padding: '2px 6px',
+          backgroundColor: item.isActive ? '#064e3b' : '#7f1d1d',
+          color: item.isActive ? '#10b981' : '#ef4444',
+          borderRadius: '12px',
+          fontSize: '11px',
           fontWeight: '600',
-          display: 'block',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis'
+          width: 'fit-content',
+          border: `1px solid ${item.isActive ? '#10b981' : '#ef4444'}`,
+          minWidth: '70px',
+          justifyContent: 'center',
+          margin: '0 auto'
         }}>
-          {u.isActive ? 'Activo' : 'Inactivo'}
-        </span>
+          <span style={{
+            width: '5px',
+            height: '5px',
+            borderRadius: '50%',
+            backgroundColor: item.isActive ? '#10b981' : '#ef4444',
+            display: 'block',
+            flexShrink: 0
+          }}></span>
+          <span style={{ whiteSpace: 'nowrap' }}>{item.isActive ? 'Activo' : 'Inactivo'}</span>
+        </div>
       )
-    },
+    }
   ];
 
   // ─── Render
   return (
-    <AdminLayoutClean>
-      {alert.show && <Alert message={alert.message} type={alert.type} />}
-
-      <div style={{ 
-        display: 'flex', 
-        flexDirection: 'column',
-        padding: '0 12px 0 12px',
-        flex: 1,
-      }}>
-        {/* ENCABEZADO */}
-        <div style={{ marginBottom: '8px' }}>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center', 
-            marginBottom: '6px'
-          }}>
+    <>
+      {alert.show && <Alert message={alert.message} type={alert.type} onClose={() => setAlert({ ...alert, show: false })} />}
+      
+      <div style={{ display: "flex", flexDirection: "column", padding: "4px 12px 0 12px", flex: 1, height: "100%" }}>
+        {/* Encabezado */}
+        <div style={{ marginBottom: "8px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
             <div>
-              <h1 style={{ color: '#fff', fontSize: '20px', fontWeight: '700', margin: 0, lineHeight: '1.2' }}>
+              <h1 style={{ color: "#fff", fontSize: "20px", fontWeight: "700", margin: 0, lineHeight: "1.2" }}>
                 Usuarios
               </h1>
-              <p style={{ color: '#9CA3AF', fontSize: '15px', margin: 0, lineHeight: '1.3' }}>
-                Gestiona los usuarios del sistema
+              <p style={{ color: "#9CA3AF", fontSize: "15px", margin: 0, lineHeight: "1.3" }}>
+                Gestión de usuarios del sistema
               </p>
             </div>
-            <button 
-              onClick={() => openModal()} 
-              style={{ 
-                padding: '6px 13px', 
-                backgroundColor: 'transparent', 
-                border: '1px solid #F5C81B', 
-                color: '#F5C81B', 
-                borderRadius: '4px', 
-                fontSize: '11px', 
-                cursor: 'pointer', 
-                whiteSpace: 'nowrap', 
-                minWidth: '100px', 
-                fontWeight: '600', 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '3px', 
-                height: '35px' 
-              }} 
-              onMouseEnter={e => { e.target.style.backgroundColor = '#F5C81B'; e.target.style.color = '#000'; }}
-              onMouseLeave={e => { e.target.style.backgroundColor = 'transparent'; e.target.style.color = '#F5C81B'; }}
-            >
-              Registrar Usuario
-            </button>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button
+                onClick={() => openModal()}
+                style={{
+                  padding: "6px 13px",
+                  backgroundColor: "transparent",
+                  border: "1px solid #F5C81B",
+                  color: "#F5C81B",
+                  borderRadius: "4px",
+                  fontSize: "11px",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  minWidth: "100px",
+                  fontWeight: "600",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "3px",
+                  height: "35px",
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = "#F5C81B";
+                  e.target.style.color = "#000";
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = "transparent";
+                  e.target.style.color = "#F5C81B";
+                }}
+              >
+                Registrar Usuario
+              </button>
+            </div>
           </div>
-
-          {/* BÚSQUEDA Y FILTROS */}
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-            <SearchInput 
-              value={searchTerm} 
-              onChange={setSearchTerm} 
-              placeholder="Buscar por nombre, email, documento o rol..." 
-              onClear={clearSearch} 
-              fullWidth={true} 
-            />
-            <StatusFilter />
+          
+          {/* Buscador y Filtro */}
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <div style={{ flex: 1 }}>
+              <SearchInput
+                value={searchTerm}
+                onChange={setSearchTerm}
+                placeholder="Buscar por nombre, email o documento..."
+                onClear={() => setSearchTerm('')}
+                fullWidth={true}
+              />
+            </div>
+            <StatusFilter filterStatus={filterStatus} onFilterSelect={handleFilterSelect} />
           </div>
         </div>
 
-        {/* TABLA + PAGINACIÓN */}
+        {/* Contenido Principal - BORDE MÁS DELGADO */}
         <div style={{
+          flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          flex: 1,
-          minHeight: 0,
-          border: '1px solid #F5C81B',
           borderRadius: '6px',
+          border: '0.5px solid #F5C81B',
           overflow: 'hidden',
-          marginTop: '8px',
+          backgroundColor: '#000',
         }}>
+          {/* Tabla */}
           <div style={{
             flex: 1,
-            minHeight: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            overflowY: 'auto',
+            overflow: 'auto',
           }}>
-            {/* ✅ ENTITYTABLE CON TOGGLE */}
-            <EntityTable
-              entities={paginatedUsers}
-              columns={userColumns}
-              onView={viewUserDetails}
+            <EntityTable 
+              entities={paginatedUsers} 
+              columns={columns} 
+              onView={viewUserDetails} 
               onEdit={openModal} 
               onDelete={handleDeleteClick}
-              // ✅ TOGGLE: onAnular para desactivar, onReactivar para activar
-              onAnular={(row) => handleToggleStatus(row)}
-              onReactivar={(row) => handleToggleStatus(row)}
+              onAnular={handleToggleStatus}
+              onReactivar={handleToggleStatus}
+              showAnularButton={true} 
+              moduleType="usuarios" 
               idField="id"
-              estadoField="estado" // Campo que contiene "Activo"/"Inactivo"
-              moduleType="generic" // IMPORTANTE: Para mostrar el switch
+              estadoField="isActive"
               isAdministradorCheck={isAdministrador}
+              style={{
+                border: 'none',
+                borderRadius: '0',
+              }}
+              tableStyle={{
+                width: '100%',
+                borderCollapse: 'collapse',
+                tableLayout: 'fixed',
+              }}
+              headerStyle={{
+                padding: '6px 4px',
+                textAlign: 'left',
+                fontWeight: '600',
+                fontSize: '11px',
+                color: '#F5C81B',
+                borderBottom: '0.5px solid #F5C81B',
+                backgroundColor: '#151822',
+              }}
+              actionsPosition="right"
             />
           </div>
 
+          {/* Paginación - BORDE MÁS DELGADO */}
           <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '8px 12px',
-            backgroundColor: '#151822',
-            borderTop: '1px solid #F5C81B',
-            fontSize: '13px',
-            color: '#e0e0e0',
-            height: '50px',
-            boxSizing: 'border-box',
-            flexShrink: 0
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "8px 12px",
+            backgroundColor: "#151822",
+            borderTop: '0.5px solid #F5C81B',
+            fontSize: "12px",
+            color: "#e0e0e0",
+            height: "48px",
+            boxSizing: "border-box",
           }}>
-            <span style={{ fontWeight: '500' }}>
-              Mostrando {showingStart}–{endIndex} de {filteredUsers.length} usuarios
+            <span>
+              Mostrando {(filteredUsers.length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0)}–{Math.min(currentPage * itemsPerPage, filteredUsers.length)} de {filteredUsers.length} usuarios
             </span>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
               <button
                 onClick={() => setCurrentPage(currentPage - 1)}
                 disabled={currentPage === 1}
                 style={{
                   background: 'transparent',
-                  border: '1px solid #F5C81B',
+                  border: '0.5px solid #F5C81B',
                   color: currentPage === 1 ? '#6B7280' : '#F5C81B',
                   padding: '6px 12px',
                   borderRadius: '6px',
                   fontSize: '12px',
                   cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
                   fontWeight: '600',
-                  transition: 'all 0.2s ease',
-                  outline: 'none',
                   minWidth: '90px',
-                }}
-                onMouseEnter={(e) => {
-                  if (currentPage > 1) {
-                    e.currentTarget.style.backgroundColor = '#F5C81B';
-                    e.currentTarget.style.color = '#000';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (currentPage > 1) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                    e.currentTarget.style.color = '#F5C81B';
-                  }
                 }}
               >
                 ‹ Anterior
               </button>
-              
               <span style={{
                 padding: '6px 12px',
                 fontSize: '12px',
@@ -696,36 +691,21 @@ const UsersPage = () => {
                 minWidth: '60px',
                 textAlign: 'center'
               }}>
-                Página {currentPage} de {totalPages}
+                Página {currentPage} de {Math.ceil(filteredUsers.length / itemsPerPage) || 1}
               </span>
-
               <button
                 onClick={() => setCurrentPage(currentPage + 1)}
-                disabled={currentPage >= totalPages}
+                disabled={currentPage >= Math.ceil(filteredUsers.length / itemsPerPage)}
                 style={{
                   background: 'transparent',
-                  border: '1px solid #F5C81B',
-                  color: currentPage >= totalPages ? '#6B7280' : '#F5C81B',
+                  border: '0.5px solid #F5C81B',
+                  color: currentPage >= Math.ceil(filteredUsers.length / itemsPerPage) ? '#6B7280' : '#F5C81B',
                   padding: '6px 12px',
                   borderRadius: '6px',
                   fontSize: '12px',
-                  cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
+                  cursor: currentPage >= Math.ceil(filteredUsers.length / itemsPerPage) ? 'not-allowed' : 'pointer',
                   fontWeight: '600',
-                  transition: 'all 0.2s ease',
-                  outline: 'none',
                   minWidth: '90px',
-                }}
-                onMouseEnter={(e) => {
-                  if (currentPage < totalPages) {
-                    e.currentTarget.style.backgroundColor = '#F5C81B';
-                    e.currentTarget.style.color = '#000';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (currentPage < totalPages) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                    e.currentTarget.style.color = '#F5C81B';
-                  }
                 }}
               >
                 Siguiente ›
@@ -735,23 +715,39 @@ const UsersPage = () => {
         </div>
       </div>
 
-      {/* Modal: Crear/Editar Usuario */}
+      {/* Modal: Crear/Editar Usuario - BORDE MÁS DELGADO */}
       <UniversalModal
         isOpen={isModalOpen}
         onClose={closeModal}
         title={editingUser?.id ? 'Editar Usuario' : 'Registrar Usuario'}
         subtitle={editingUser?.id ? 'Modifica los datos del usuario' : 'Agrega un nuevo usuario al sistema'}
-        showActions={true}
-        onCancel={closeModal}
-        onConfirm={handleSave}
-        confirmText={editingUser?.id ? 'Guardar Cambios' : 'Crear Usuario'}
-        contentStyle={{ 
-          padding: '0',
-          maxHeight: 'none',
+        showActions={false}
+        customStyles={{
+          content: { 
+            padding: '16px',
+            backgroundColor: '#000',
+            border: '0.5px solid #F5C81B',
+            borderRadius: '6px',
+            maxWidth: '400px',
+            width: '90%',
+            maxHeight: '80vh',
+            overflowY: 'auto',
+          },
+          title: {
+            color: '#fff',
+            fontSize: '16px',
+            fontWeight: '600',
+            marginBottom: '4px'
+          },
+          subtitle: {
+            color: '#9CA3AF',
+            fontSize: '12px',
+            marginBottom: '16px'
+          }
         }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxWidth: '100%' }}>
-          <div style={{ display: 'flex', gap: '6px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '12px' }}>
             <div style={{ flex: 1 }}>
               {renderField('Nombre', 'nombre', 'text')}
             </div>
@@ -764,9 +760,9 @@ const UsersPage = () => {
             {renderField('Email', 'email', 'email')}
           </div>
 
-          <div style={{ display: 'flex', gap: '6px' }}>
+          <div style={{ display: 'flex', gap: '12px' }}>
             <div style={{ flex: 1 }}>
-              {renderField('Tipo de Documento', 'tipoDocumento', 'select', [
+              {renderField('Tipo Documento', 'tipoDocumento', 'select', [
                 { value: 'CC', label: 'Cédula' },
                 { value: 'CE', label: 'Extranjería' },
                 { value: 'NIT', label: 'NIT' },
@@ -774,12 +770,44 @@ const UsersPage = () => {
               ])}
             </div>
             <div style={{ flex: 1 }}>
-              {renderField('Número de Documento', 'numeroDocumento', 'text')}
+              {renderField('N° Documento', 'numeroDocumento', 'text')}
             </div>
           </div>
 
           <div>
             {renderField('Rol', 'rol', 'select')}
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', borderTop: '0.5px solid #334155', paddingTop: '12px' }}>
+            <button 
+              onClick={closeModal}
+              style={{
+                background: 'transparent',
+                border: '0.5px solid #94a3b8',
+                color: '#94a3b8',
+                padding: '6px 16px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                cursor: 'pointer'
+              }}
+            >
+              Cancelar
+            </button>
+            <button 
+              onClick={handleSave}
+              style={{
+                background: '#F5C81B',
+                color: '#000',
+                border: 'none',
+                padding: '6px 16px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}
+            >
+              {editingUser?.id ? 'Guardar Cambios' : 'Crear Usuario'}
+            </button>
           </div>
         </div>
       </UniversalModal>
@@ -793,165 +821,124 @@ const UsersPage = () => {
         entityData={userToDelete}
       />
 
-      {/* Modal Detalles */}
+      {/* Modal Detalles - BORDE MÁS DELGADO */}
       <UniversalModal
         isOpen={isDetailsOpen}
         onClose={() => setIsDetailsOpen(false)}
         title="Detalles del Usuario"
         subtitle="Información detallada del usuario"
         showActions={false}
-        contentStyle={{
-          padding: '0',
-          maxHeight: 'none',
+        customStyles={{
+          content: { 
+            padding: '16px',
+            backgroundColor: '#000',
+            border: '0.5px solid #F5C81B',
+            borderRadius: '6px',
+            maxWidth: '400px',
+            width: '90%',
+            maxHeight: '80vh',
+            overflowY: 'auto',
+          },
+          title: {
+            color: '#fff',
+            fontSize: '16px',
+            fontWeight: '600',
+            marginBottom: '4px'
+          },
+          subtitle: {
+            color: '#9CA3AF',
+            fontSize: '12px',
+            marginBottom: '16px'
+          }
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <div style={{ flex: 1 }}>
-                <label style={{ fontSize: '11px', fontWeight: '600', color: '#e2e8f0', marginBottom: '4px', display: 'block' }}>
-                  Nombre
-                </label>
-                <div style={{
-                  backgroundColor: '#1e293b',
-                  border: '1px solid #334155',
-                  borderRadius: '6px',
-                  padding: '8px 12px',
-                  color: '#F5C81B',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  minHeight: '36px',
-                  display: 'flex',
-                  alignItems: 'center'
-                }}>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <div style={{ flex: 1 }}>
+              <FormField label="Nombre">
+                <div style={{ backgroundColor: "#1e293b", border: "1px solid #334155", borderRadius: "6px", padding: "6px 10px", color: "#F5C81B", fontSize: "13px", fontWeight: "600" }}>
                   {selectedUser?.nombre || 'N/A'}
                 </div>
-              </div>
-              <div style={{ flex: 1 }}>
-                <label style={{ fontSize: '11px', fontWeight: '600', color: '#e2e8f0', marginBottom: '4px', display: 'block' }}>
-                  Apellido
-                </label>
-                <div style={{
-                  backgroundColor: '#1e293b',
-                  border: '1px solid #334155',
-                  borderRadius: '6px',
-                  padding: '8px 12px',
-                  color: '#F5C81B',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  minHeight: '36px',
-                  display: 'flex',
-                  alignItems: 'center'
-                }}>
+              </FormField>
+            </div>
+            <div style={{ flex: 1 }}>
+              <FormField label="Apellido">
+                <div style={{ backgroundColor: "#1e293b", border: "1px solid #334155", borderRadius: "6px", padding: "6px 10px", color: "#F5C81B", fontSize: "13px", fontWeight: "600" }}>
                   {selectedUser?.apellido || 'N/A'}
                 </div>
-              </div>
+              </FormField>
             </div>
+          </div>
 
-            <div>
-              <label style={{ fontSize: '11px', fontWeight: '600', color: '#e2e8f0', marginBottom: '4px', display: 'block' }}>
-                Email
-              </label>
-              <div style={{
-                backgroundColor: '#1e293b',
-                border: '1px solid #334155',
-                borderRadius: '6px',
-                padding: '8px 12px',
-                color: '#f1f5f9',
-                fontSize: '14px',
-                minHeight: '36px',
-                display: 'flex',
-                alignItems: 'center'
-              }}>
-                {selectedUser?.email || 'Sin email'}
+          <div>
+            <FormField label="Email">
+              <div style={{ backgroundColor: "#1e293b", border: "1px solid #334155", borderRadius: "6px", padding: "6px 10px", color: "#f1f5f9", fontSize: "13px" }}>
+                {selectedUser?.email || 'N/A'}
               </div>
-            </div>
+            </FormField>
+          </div>
 
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <div style={{ flex: 1 }}>
-                <label style={{ fontSize: '11px', fontWeight: '600', color: '#e2e8f0', marginBottom: '4px', display: 'block' }}>
-                  Tipo de Documento
-                </label>
-                <div style={{
-                  backgroundColor: '#1e293b',
-                  border: '1px solid #334155',
-                  borderRadius: '6px',
-                  padding: '8px 12px',
-                  color: '#f1f5f9',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  minHeight: '36px',
-                  display: 'flex',
-                  alignItems: 'center'
-                }}>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <div style={{ flex: 1 }}>
+              <FormField label="Tipo Documento">
+                <div style={{ backgroundColor: "#1e293b", border: "1px solid #334155", borderRadius: "6px", padding: "6px 10px", color: "#f1f5f9", fontSize: "13px" }}>
                   {selectedUser?.tipoDocumento || 'N/A'}
                 </div>
-              </div>
-              <div style={{ flex: 1 }}>
-                <label style={{ fontSize: '11px', fontWeight: '600', color: '#e2e8f0', marginBottom: '4px', display: 'block' }}>
-                  Número de Documento
-                </label>
-                <div style={{
-                  backgroundColor: '#1e293b',
-                  border: '1px solid #334155',
-                  borderRadius: '6px',
-                  padding: '8px 12px',
-                  color: '#f1f5f9',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  minHeight: '36px',
-                  display: 'flex',
-                  alignItems: 'center'
-                }}>
+              </FormField>
+            </div>
+            <div style={{ flex: 1 }}>
+              <FormField label="N° Documento">
+                <div style={{ backgroundColor: "#1e293b", border: "1px solid #334155", borderRadius: "6px", padding: "6px 10px", color: "#f1f5f9", fontSize: "13px" }}>
                   {selectedUser?.numeroDocumento || 'N/A'}
                 </div>
-              </div>
+              </FormField>
             </div>
+          </div>
 
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <div style={{ flex: 1 }}>
-                <label style={{ fontSize: '11px', fontWeight: '600', color: '#e2e8f0', marginBottom: '4px', display: 'block' }}>
-                  Rol
-                </label>
-                <div style={{
-                  backgroundColor: '#1e293b',
-                  border: '1px solid #334155',
-                  borderRadius: '6px',
-                  padding: '8px 12px',
-                  color: '#F5C81B',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  minHeight: '36px',
-                  display: 'flex',
-                  alignItems: 'center'
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <div style={{ flex: 1 }}>
+              <FormField label="Rol">
+                <div style={{ 
+                  backgroundColor: "#1e293b", 
+                  border: "1px solid #334155", 
+                  borderRadius: "6px", 
+                  padding: "6px 10px", 
+                  color: selectedUser?.rol === 'Administrador' ? '#F5C81B' : '#f1f5f9', 
+                  fontSize: "13px", 
+                  fontWeight: selectedUser?.rol === 'Administrador' ? '600' : '400'
                 }}>
-                  {selectedUser?.rol || 'Sin rol'}
+                  {selectedUser?.rol || 'N/A'}
                 </div>
-              </div>
-              <div style={{ flex: 1 }}>
-                <label style={{ fontSize: '11px', fontWeight: '600', color: '#e2e8f0', marginBottom: '4px', display: 'block' }}>
-                  Estado
-                </label>
-                <div style={{
-                  backgroundColor: '#1e293b',
-                  border: '1px solid #334155',
-                  borderRadius: '6px',
-                  padding: '8px 12px',
-                  color: selectedUser?.isActive ? '#10b981' : '#ef4444',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  minHeight: '36px',
-                  display: 'flex',
-                  alignItems: 'center'
-                }}>
+              </FormField>
+            </div>
+            <div style={{ flex: 1 }}>
+              <FormField label="Estado">
+                <div style={{ backgroundColor: "#1e293b", border: "1px solid #334155", borderRadius: "6px", padding: "6px 10px", color: selectedUser?.isActive ? '#10b981' : '#ef4444', fontSize: "13px", fontWeight: "600" }}>
                   {selectedUser?.isActive ? 'Activo' : 'Inactivo'}
                 </div>
-              </div>
+              </FormField>
             </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '0.5px solid #334155', paddingTop: '12px' }}>
+            <button 
+              onClick={() => setIsDetailsOpen(false)}
+              style={{
+                background: 'transparent',
+                border: '0.5px solid #94a3b8',
+                color: '#94a3b8',
+                padding: '6px 16px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                cursor: 'pointer'
+              }}
+            >
+              Cerrar
+            </button>
           </div>
         </div>
       </UniversalModal>
-    </AdminLayoutClean>
+    </>
   );
 };
 
